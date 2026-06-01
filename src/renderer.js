@@ -160,7 +160,7 @@ export class GraphRenderer {
 
     // Use dagre for layout
     const g = new dagre.graphlib.Graph();
-    g.setGraph({ rankdir: 'LR', nodesep: 14, ranksep: 28, marginx: 20, marginy: 20, align: 'UL' });
+    g.setGraph({ rankdir: 'LR', nodesep: 8, ranksep: 14, marginx: 20, marginy: 20, align: 'UL' });
     g.setDefaultEdgeLabel(function() { return {}; });
 
     for (const node of graph.nodes) {
@@ -195,12 +195,12 @@ export class GraphRenderer {
 
   nodeDims(node) {
     const isIdentity = IDENTITY_TYPES.has(node.type);
-    if (isIdentity) return { w: 56, h: 24 };
-    if (['Add', 'Subtract', 'Multiply', 'Average'].includes(node.type)) return { w: 28, h: 28 };
-    if (node.type === 'Concatenate') return { w: 28, h: 28 };
-    if (node.type === 'Slice') return { w: 56, h: 28 };
-    if (node.type === 'Input' || node.type === 'Output') return { w: 64, h: 32 };
-    return { w: 80, h: 36 };
+    if (isIdentity) return { w: 10, h: 44 };
+    if (['Add', 'Subtract', 'Multiply', 'Average'].includes(node.type)) return { w: 22, h: 22 };
+    if (node.type === 'Concatenate') return { w: 22, h: 22 };
+    if (node.type === 'Slice') return { w: 12, h: 44 };
+    if (node.type === 'Input' || node.type === 'Output') return { w: 18, h: 50 };
+    return { w: 20, h: 80 };
   }
 
   drawNode(parent, node, pos) {
@@ -220,25 +220,30 @@ export class GraphRenderer {
       const sym = node.type === 'Add' ? '+' : node.type === 'Subtract' ? '−' : node.type === 'Multiply' ? '×' : node.type === 'Concatenate' ? 'C' : 'ø';
       const symEl = this.el('text', {
         x: cx, y: cy, 'text-anchor': 'middle', 'dominant-baseline': 'central',
-        fill: c.text, 'font-size': node.type === 'Concatenate' ? '10px' : '14px', 'font-weight': '600', 'font-family': font,
+        fill: c.text, 'font-size': node.type === 'Concatenate' ? '9px' : '12px', 'font-weight': '600', 'font-family': font,
       });
       symEl.textContent = sym;
       g.appendChild(symEl);
     } else {
-      const rx = isIdentity ? 4 : 6;
+      const rx = isIdentity ? 3 : 5;
       g.appendChild(this.el('rect', {
         x: 0, y: 0, width: w, height: h, rx, ry: rx,
-        fill: c.fill, stroke: c.stroke, 'stroke-width': 1.5,
+        fill: c.fill, stroke: c.stroke, 'stroke-width': 1.2,
       }));
 
-      const label = isIdentity ? this.shortType(node.type) : this.shortTypeName(node.type);
+      const typeName = isIdentity ? this.shortType(node.type) : this.shortTypeName(node.type);
+      const paramStr = isIdentity ? '' : this.shortLabel(node);
+      const parts = [typeName, paramStr].filter(Boolean);
+      const label = parts.join(', ');
+      const textG = this.el('g', { transform: `translate(${w / 2}, ${h / 2}) rotate(-90)` });
       const txt = this.el('text', {
-        x: w / 2, y: h / 2, 'text-anchor': 'middle', 'dominant-baseline': 'central',
-        fill: c.text, 'font-size': isIdentity ? '8px' : '9px', 'font-weight': '600',
-        'font-family': font, 'letter-spacing': '0.3px',
+        x: 0, y: 0, 'text-anchor': 'middle', 'dominant-baseline': 'central',
+        fill: c.text, 'font-size': isIdentity ? '7px' : '8px', 'font-weight': '600',
+        'font-family': font, 'letter-spacing': '0.2px',
       });
       txt.textContent = label;
-      g.appendChild(txt);
+      textG.appendChild(txt);
+      g.appendChild(textG);
     }
 
     const title = this.el('title');
