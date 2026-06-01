@@ -156,7 +156,16 @@ main {
   color: var(--text-muted);
   background: rgba(255,255,255,0.03);
   border-bottom: 1px solid var(--border);
+  justify-content: space-between;
 }
+
+.copy-btn {
+  background: none; border: none; color: var(--text-muted); cursor: pointer;
+  padding: 2px 4px; border-radius: 4px; display: flex; align-items: center;
+  transition: color 0.2s, background 0.2s; margin-left: auto;
+}
+.copy-btn:hover { color: var(--text); background: rgba(255,255,255,0.08); }
+.copy-btn.copied { color: #28c840; }
 
 .editor-panel .panel-header::before {
   content: '';

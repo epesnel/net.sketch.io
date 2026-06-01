@@ -738,7 +738,8 @@ export class GraphRenderer {
     const lineNumEl = document.getElementById('line-numbers');
     if (!scroll) return;
 
-    const matchLine = (node.srcLine || 0) - 1;
+    const line = node.defLine > 0 ? node.defLine : (node.srcLine || 0);
+    const matchLine = line - 1;
     if (matchLine < 0) return;
 
     const lineH = 20;

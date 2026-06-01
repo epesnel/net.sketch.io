@@ -42,7 +42,10 @@ function doAnalyze() {
     currentRenderer.render(graph);
     if (window._selectedNodeId) {
       var sel = graph.nodes.find(function(n) { return n.id === window._selectedNodeId; });
-      if (sel) { currentRenderer.showNodeDetail(sel); currentRenderer.highlightCode(sel); }
+      if (sel) {
+        currentRenderer.showNodeDetail(sel);
+        currentRenderer.highlightCode(sel);
+      }
     }
   } catch (e) {
     warningsEl.textContent = 'Error: ' + e.message;
@@ -81,7 +84,9 @@ function updateSourceValue(node, field, rawValue) {
     var pyVal = formatPyVal(field, rawValue, m[2]);
     lines[lineIdx] = line.substring(0, m.index) + m[1] + pyVal + line.substring(m.index + m[0].length);
     ed.value = lines.join('\\n');
-    updateHighlight(); syncEditorSize(); doAnalyze();
+    updateHighlight(); syncEditorSize();
+    window._hlDefLine = true;
+    doAnalyze();
     return;
   }
   // Positional fallback: find the Nth arg in the call parens
@@ -103,7 +108,9 @@ function updateSourceValue(node, field, rawValue) {
     var pyVal = formatPyVal(field, rawValue, args[posIdx].text.trim());
     lines[lineIdx] = line.substring(0, args[posIdx].start) + pyVal + line.substring(args[posIdx].end);
     ed.value = lines.join('\\n');
-    updateHighlight(); syncEditorSize(); doAnalyze();
+    updateHighlight(); syncEditorSize();
+    window._hlDefLine = true;
+    doAnalyze();
   }
 }
 function formatPyVal(field, raw, old) {
@@ -127,6 +134,13 @@ function splitCallArgs(line, start) {
   if (cur < i) args.push({text: line.substring(cur, i), start: cur, end: i});
   return args;
 }
+document.getElementById('copy-code').addEventListener('click', function() {
+  var btn = this;
+  navigator.clipboard.writeText(document.getElementById('code-editor').value).then(function() {
+    btn.classList.add('copied');
+    setTimeout(function() { btn.classList.remove('copied'); }, 1200);
+  });
+});
 var editor = document.getElementById('code-editor');
 editor.value = EXAMPLE_CODE;
 editor.oninput = function() { clearTimeout(debounceTimer); debounceTimer = setTimeout(doAnalyze, 1200); };
@@ -273,7 +287,7 @@ html = f"""<!DOCTYPE html>
 </header>
 <main>
 <div class="panel editor-panel" id="editor-panel">
-  <div class="panel-header">Python Code</div>
+  <div class="panel-header">Python Code<button class="copy-btn" id="copy-code" title="Copy code"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button></div>
   <div class="editor-container">
     <div class="line-numbers" id="line-numbers"></div>
     <div class="editor-scroll" id="editor-scroll">
