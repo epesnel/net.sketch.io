@@ -197,6 +197,22 @@ main {
 .view-btn:hover { color: #555; }
 .view-btn.active { background: #fff; color: #333; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
 
+#zoom-controls {
+  position: absolute; top: 10px; left: 10px; z-index: 5;
+  display: flex; flex-direction: column; gap: 2px;
+}
+.zoom-btn {
+  width: 28px; height: 28px; border: 1px solid rgba(0,0,0,0.12);
+  border-radius: 6px; background: rgba(255,255,255,0.9); color: #444;
+  font-size: 16px; font-weight: 600; cursor: pointer; display: flex;
+  align-items: center; justify-content: center; padding: 0;
+  backdrop-filter: blur(6px); box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  transition: background 0.15s, color 0.15s; line-height: 1;
+  font-family: var(--font);
+}
+.zoom-btn:hover { background: #fff; color: #111; }
+.zoom-fit { font-size: 14px; }
+
 #heatmap-legend {
   position: absolute; bottom: 12px; right: 12px;
   background: rgba(255,255,255,0.92); border: 1px solid rgba(0,0,0,0.1);
@@ -350,6 +366,7 @@ main {
   background-image: radial-gradient(circle, #d0d0d0 0.8px, transparent 0.8px);
   background-size: 16px 16px;
   background-color: var(--graph-bg);
+  position: relative;
 }
 
 .empty-state {

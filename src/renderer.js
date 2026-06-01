@@ -950,9 +950,37 @@ export class GraphRenderer {
     svg.setAttribute('viewBox', `${this.vb.x} ${this.vb.y} ${this.vb.w} ${this.vb.h}`);
   }
 
+  zoomFit() {
+    if (!this.svg) return;
+    this.vb = { x: 0, y: 0, w: this.naturalW, h: this.naturalH };
+    this.applyViewBox();
+  }
+
+  zoomBy(factor) {
+    if (!this.svg) return;
+    const cx = this.vb.x + this.vb.w / 2;
+    const cy = this.vb.y + this.vb.h / 2;
+    this.vb.w *= factor;
+    this.vb.h *= factor;
+    this.vb.x = cx - this.vb.w / 2;
+    this.vb.y = cy - this.vb.h / 2;
+    this.applyViewBox();
+  }
+
   addZoomPan() {
     const svg = this.svg;
+    const self = this;
     let isPanning = false, startX = 0, startY = 0, startVB = null;
+
+    const controls = document.createElement('div');
+    controls.id = 'zoom-controls';
+    controls.innerHTML = '<button class="zoom-btn" id="zoom-in" title="Zoom in">+</button>'
+      + '<button class="zoom-btn" id="zoom-out" title="Zoom out">&minus;</button>'
+      + '<button class="zoom-btn zoom-fit" id="zoom-fit" title="Fit to view">&#x2922;</button>';
+    this.container.appendChild(controls);
+    document.getElementById('zoom-in').addEventListener('click', () => self.zoomBy(1 / 1.3));
+    document.getElementById('zoom-out').addEventListener('click', () => self.zoomBy(1.3));
+    document.getElementById('zoom-fit').addEventListener('click', () => self.zoomFit());
 
     svg.addEventListener('wheel', (e) => {
       e.preventDefault();
