@@ -5872,7 +5872,10 @@ class Interpreter {
   }
 
   applyLayer(layer, args, kwargs, env) {
-    const inputs = args.filter(a => a?.kind === 'tensor');
+    let inputs = args.filter(a => a?.kind === 'tensor');
+    if (inputs.length === 0 && args.length === 1 && (args[0]?.kind === 'list' || args[0]?.kind === 'tuple')) {
+      inputs = args[0].items.filter(a => a?.kind === 'tensor');
+    }
     if (inputs.length === 0) return { kind: 'unknown' };
     const inputTensor = inputs[0];
     const inputShape = inputTensor.shape;
@@ -6229,14 +6232,25 @@ class Interpreter {
     let left = this.evalExpr(expr.left, env);
     for (let i = 0; i < expr.ops.length; i++) {
       const right = this.evalExpr(expr.comparators[i], env);
-      const a = this.toScalar(left), b = this.toScalar(right);
       let result;
-      switch (expr.ops[i]) {
-        case '==': result = a === b; break; case '!=': result = a !== b; break;
-        case '<': result = a < b; break; case '>': result = a > b; break;
-        case '<=': result = a <= b; break; case '>=': result = a >= b; break;
-        case 'is': result = left === right; break; case 'is not': result = left !== right; break;
-        default: result = true;
+      const op = expr.ops[i];
+      if (op === 'in' || op === 'not in') {
+        const items = (right?.kind === 'list' || right?.kind === 'tuple') ? right.items : [];
+        const lv = this.toScalar(left);
+        const found = items.some(it => this.toScalar(it) === lv);
+        result = op === 'in' ? found : !found;
+      } else if ((left?.kind === 'tuple' || left?.kind === 'list') && (right?.kind === 'tuple' || right?.kind === 'list')) {
+        const eq = left.items.length === right.items.length && left.items.every((v, j) => this.toScalar(v) === this.toScalar(right.items[j]));
+        result = op === '==' ? eq : op === '!=' ? !eq : true;
+      } else {
+        const a = this.toScalar(left), b = this.toScalar(right);
+        switch (op) {
+          case '==': result = a === b; break; case '!=': result = a !== b; break;
+          case '<': result = a < b; break; case '>': result = a > b; break;
+          case '<=': result = a <= b; break; case '>=': result = a >= b; break;
+          case 'is': result = left === right; break; case 'is not': result = left !== right; break;
+          default: result = true;
+        }
       }
       if (!result) return { kind: 'scalar', value: false };
       left = right;
@@ -6324,13 +6338,14 @@ class Interpreter {
       case 'Conv2D': case 'Conv1D': case 'Conv3D': {
         const k = this.normalizeInt(config.kernel_size, 3);
         const f = config.filters || 0;
+        const bias = config.use_bias === false ? 0 : f;
         const dim = type === 'Conv1D' ? 1 : type === 'Conv3D' ? 3 : 2;
-        return typeof inC === 'number' ? (Math.pow(k, dim) * inC + 1) * f : 0;
+        return typeof inC === 'number' ? Math.pow(k, dim) * inC * f + bias : 0;
       }
-      case 'Conv2DTranspose': { const k = this.normalizeInt(config.kernel_size, 3); const f = config.filters || 0; return typeof inC === 'number' ? (k * k * inC + 1) * f : 0; }
-      case 'SeparableConv2D': { const k = this.normalizeInt(config.kernel_size, 3); const f = config.filters || 0; return typeof inC === 'number' ? k * k * inC + (inC + 1) * f : 0; }
-      case 'DepthwiseConv2D': { const k = this.normalizeInt(config.kernel_size, 3); return typeof inC === 'number' ? (k * k + 1) * inC : 0; }
-      case 'Dense': { const u = config.units || 0; return typeof inC === 'number' ? (inC + 1) * u : 0; }
+      case 'Conv2DTranspose': { const k = this.normalizeInt(config.kernel_size, 3); const f = config.filters || 0; const bias = config.use_bias === false ? 0 : f; return typeof inC === 'number' ? k * k * inC * f + bias : 0; }
+      case 'SeparableConv2D': { const k = this.normalizeInt(config.kernel_size, 3); const f = config.filters || 0; const bias = config.use_bias === false ? 0 : f; return typeof inC === 'number' ? k * k * inC + inC * f + bias : 0; }
+      case 'DepthwiseConv2D': { const k = this.normalizeInt(config.kernel_size, 3); const bias = config.use_bias === false ? 0 : inC; return typeof inC === 'number' ? k * k * inC + bias : 0; }
+      case 'Dense': { const u = config.units || 0; const bias = config.use_bias === false ? 0 : u; return typeof inC === 'number' ? inC * u + bias : 0; }
       case 'BatchNormalization': return typeof inC === 'number' ? inC * 4 : 0;
       case 'LayerNormalization': return typeof inC === 'number' ? inC * 2 : 0;
       case 'PReLU': return typeof inC === 'number' ? inC : 0;

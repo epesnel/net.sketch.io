@@ -63,7 +63,7 @@ def run_js(code, input_shape):
     """)
     try:
         out = subprocess.run(['osascript', '-l', 'JavaScript', '-e', js],
-                           capture_output=True, text=True, timeout=10)
+                           capture_output=True, text=True, timeout=30)
         if out.returncode != 0:
             return {'params': -1, 'output_shape': None, 'error': out.stderr.strip()[:200]}
         return json.loads(out.stdout.strip())
@@ -369,6 +369,29 @@ def get_tf_results():
     m = ProgDownLite(ratio=2)
     m(tf.zeros((1, 64, 64, 3)))
     results['ProgDownLite'] = record(m, (1, 64, 64, 3))
+
+    # ─── Tests 20-24: Diverse architectures ──────────────
+    tf.keras.backend.clear_session()
+    from diverse import MiniResNet, MobileBlock, TinyAttention, UNetMini, AutoEncoder
+
+    m = MiniResNet(); m(tf.zeros((1, 32, 32, 3)))
+    results['MiniResNet'] = record(m, (1, 32, 32, 3))
+
+    tf.keras.backend.clear_session()
+    m = MobileBlock(); m(tf.zeros((1, 32, 32, 3)))
+    results['MobileBlock'] = record(m, (1, 32, 32, 3))
+
+    tf.keras.backend.clear_session()
+    m = TinyAttention(); m(tf.zeros((1, 16, 16, 3)))
+    results['TinyAttention'] = record(m, (1, 16, 16, 3))
+
+    tf.keras.backend.clear_session()
+    m = UNetMini(); m(tf.zeros((1, 64, 64, 3)))
+    results['UNetMini'] = record(m, (1, 64, 64, 3))
+
+    tf.keras.backend.clear_session()
+    m = AutoEncoder(); m(tf.zeros((1, 32, 32, 3)))
+    results['AutoEncoder'] = record(m, (1, 32, 32, 3))
 
     return results
 
@@ -682,6 +705,14 @@ JS_CODES['HeavyTeacher'] = _teacher_code + "\nmodel = HeavyTeacher(_ratio=0.5)\n
 with open(os.path.join(_root, 'tests/models/progdownlite.py')) as f:
     _progdown_code = f.read()
 JS_CODES['ProgDownLite'] = _progdown_code + "\nmodel = ProgDownLite(ratio=2)\n"
+
+_diverse_code = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'models', 'diverse.py')).read()
+_diverse_base = _diverse_code.split('# Instantiate all models')[0]
+JS_CODES['MiniResNet'] = _diverse_base + "\nmodel = MiniResNet()\n"
+JS_CODES['MobileBlock'] = _diverse_base + "\nmodel = MobileBlock()\n"
+JS_CODES['TinyAttention'] = _diverse_base + "\nmodel = TinyAttention()\n"
+JS_CODES['UNetMini'] = _diverse_base + "\nmodel = UNetMini()\n"
+JS_CODES['AutoEncoder'] = _diverse_base + "\nmodel = AutoEncoder()\n"
 
 # ─── Main ───────────────────────────────────────────────
 if __name__ == '__main__':
