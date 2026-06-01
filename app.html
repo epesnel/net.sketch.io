@@ -6492,8 +6492,16 @@ class GraphRenderer {
     if (['Add', 'Subtract', 'Multiply', 'Average'].includes(node.type)) return { w: 22, h: 22 };
     if (node.type === 'Concatenate') return { w: 22, h: 22 };
     if (node.type === 'Slice') return { w: 12, h: 44 };
-    if (node.type === 'Input' || node.type === 'Output') return { w: 18, h: 50 };
-    return { w: 20, h: 80 };
+
+    const typeName = this.shortTypeName(node.type);
+    const paramStr = this.shortLabel(node);
+    const label = [typeName, paramStr].filter(Boolean).join(', ');
+    const charW = 5.2;
+    const textLen = label.length * charW;
+    const minH = Math.max(50, textLen + 16);
+
+    if (node.type === 'Input' || node.type === 'Output') return { w: 18, h: Math.max(50, minH) };
+    return { w: 20, h: Math.round(minH) };
   }
 
   drawNode(parent, node, pos) {
@@ -6695,28 +6703,29 @@ class GraphRenderer {
     if (!from || !to) return;
     const isMainEdge = this._mainEdges && this._mainEdges.has(edge.from + ':' + edge.to);
 
+    const dagreEdge = this._dagreGraph.edge(edge.from, edge.to);
     const x1 = from.x + from.w, y1 = from.y + from.h / 2;
     const x2 = to.x, y2 = to.y + to.h / 2;
-    const dx = x2 - x1;
+
+    const allPts = [{ x: x1, y: y1 }];
+    if (dagreEdge && dagreEdge.points) {
+      for (const p of dagreEdge.points) allPts.push(p);
+    }
+    allPts.push({ x: x2, y: y2 });
 
     let d;
-    if (Math.abs(y2 - y1) < 3 && isMainEdge) {
+    if (allPts.length === 2) {
       d = `M${x1},${y1} L${x2},${y2}`;
-    } else if (isMainEdge) {
-      const mx = x1 + dx / 2;
-      d = `M${x1},${y1} C${mx},${y1} ${mx},${y2} ${x2},${y2}`;
     } else {
-      let maxBottom = Math.max(from.y + from.h, to.y + to.h);
-      const minX = Math.min(from.x, to.x);
-      const maxX = Math.max(from.x + from.w, to.x + to.w);
-      for (const p of Object.values(positions)) {
-        if (p.x + p.w > minX && p.x < maxX) {
-          maxBottom = Math.max(maxBottom, p.y + p.h);
-        }
+      d = `M${allPts[0].x},${allPts[0].y}`;
+      for (let i = 1; i < allPts.length - 1; i++) {
+        const prev = allPts[i - 1], cur = allPts[i], next = allPts[i + 1];
+        const mx1 = (prev.x + cur.x) / 2, my1 = (prev.y + cur.y) / 2;
+        const mx2 = (cur.x + next.x) / 2, my2 = (cur.y + next.y) / 2;
+        if (i === 1) d += ` Q${cur.x},${cur.y} ${mx2},${my2}`;
+        else d += ` T${mx2},${my2}`;
       }
-      const dropY = maxBottom + 20 + Math.min(Math.abs(dx) * 0.03, 25);
-      const r = 8;
-      d = `M${x1},${y1} L${x1},${dropY - r} Q${x1},${dropY} ${x1 + r},${dropY} L${x2 - r},${dropY} Q${x2},${dropY} ${x2},${dropY - r} L${x2},${y2}`;
+      d += ` T${x2},${y2}`;
     }
 
     const path = this.el('path', {
