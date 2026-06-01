@@ -1,0 +1,165 @@
+{
+  "Single Conv2D": {
+    "params": 448,
+    "output_shape": [
+      1,
+      32,
+      32,
+      16
+    ],
+    "input_shape": [
+      1,
+      32,
+      32,
+      3
+    ]
+  },
+  "Conv+BN+Conv": {
+    "params": 400,
+    "output_shape": [
+      1,
+      16,
+      16,
+      16
+    ],
+    "input_shape": [
+      1,
+      16,
+      16,
+      3
+    ]
+  },
+  "Residual Add": {
+    "params": 84,
+    "output_shape": [
+      1,
+      8,
+      8,
+      3
+    ],
+    "input_shape": [
+      1,
+      8,
+      8,
+      3
+    ]
+  },
+  "DepthwiseConv2D": {
+    "params": 208,
+    "output_shape": [
+      1,
+      16,
+      16,
+      8
+    ],
+    "input_shape": [
+      1,
+      16,
+      16,
+      8
+    ]
+  },
+  "U-Net skip": {
+    "params": 12033,
+    "output_shape": [
+      1,
+      32,
+      32,
+      1
+    ],
+    "input_shape": [
+      1,
+      32,
+      32,
+      3
+    ]
+  },
+  "For loop layers": {
+    "params": 1401,
+    "output_shape": [
+      1,
+      8,
+      8,
+      1
+    ],
+    "input_shape": [
+      1,
+      8,
+      8,
+      3
+    ]
+  },
+  "LightUNet flat bf=16 s=3": {
+    "params": 10128,
+    "output_shape": [
+      1,
+      64,
+      64,
+      16
+    ],
+    "input_shape": [
+      1,
+      64,
+      64,
+      6
+    ]
+  },
+  "Dense classifier": {
+    "params": 3658,
+    "output_shape": [
+      1,
+      10
+    ],
+    "input_shape": [
+      1,
+      32,
+      32,
+      3
+    ]
+  },
+  "Multi-branch concat": {
+    "params": 889,
+    "output_shape": [
+      1,
+      16,
+      16,
+      1
+    ],
+    "input_shape": [
+      1,
+      16,
+      16,
+      3
+    ]
+  },
+  "Chained residuals+BN": {
+    "params": 10035,
+    "output_shape": [
+      1,
+      32,
+      32,
+      3
+    ],
+    "input_shape": [
+      1,
+      32,
+      32,
+      3
+    ]
+  },
+  "DW separable blocks": {
+    "params": 3678,
+    "output_shape": [
+      1,
+      16,
+      16,
+      64
+    ],
+    "input_shape": [
+      1,
+      16,
+      16,
+      3
+    ]
+  }
+}

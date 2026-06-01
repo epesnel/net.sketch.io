@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Pipeline Tests</title>
+  <style>
+    body { font-family: monospace; background: #1e1e1e; color: #d4d4d4; padding: 20px; max-width: 1100px; }
+    h1 { color: #569cd6; margin-bottom: 20px; }
+    .test { margin-bottom: 16px; padding: 12px; border-radius: 4px; background: #252526; }
+    .test-name { font-weight: bold; font-size: 14px; margin-bottom: 8px; }
+    .test-pass .test-name { color: #4ec9b0; }
+    .test-fail .test-name { color: #f44747; }
+    .test-error .test-name { color: #ce9178; }
+    .check { margin-left: 16px; padding: 2px 0; font-size: 12px; }
+    .check-pass { color: #6a9955; }
+    .check-fail { color: #f44747; font-weight: bold; }
+    .summary { margin-top: 24px; padding: 12px; border-radius: 4px; font-size: 16px; font-weight: bold; }
+    .summary-pass { background: #2d4a2d; color: #4ec9b0; }
+    .summary-fail { background: #4a2d2d; color: #f44747; }
+  </style>
+</head>
+<body>
+  <h1>Pipeline Tests: tokenizer -&gt; parser -&gt; interpreter</h1>
+  <div id="output">Loading modules...</div>
+
+  <script type="module">
+    import { Tokenizer } from '../src/tokenizer.js';
+    import { Parser } from '../src/parser.js';
+    import { Interpreter } from '../src/interpreter.js';
+    import { runAllTests } from './test_pipeline.js';
+
+    const output = document.getElementById('output');
+    try {
+      output.innerHTML = 'Running tests...<br>';
+      const results = runAllTests(Tokenizer, Parser, Interpreter);
+
+      let html = '';
+      let totalPass = 0, totalFail = 0, totalTests = 0;
+
+      for (const test of results) {
+        totalTests++;
+        const allPass = !test.error && test.checks.every(c => c.pass);
+        const cssClass = test.error ? 'test-error' : (allPass ? 'test-pass' : 'test-fail');
+        if (allPass) totalPass++; else totalFail++;
+
+        html += '<div class="test ' + cssClass + '">';
+        html += '<div class="test-name">' + (test.error ? 'ERROR' : (allPass ? 'PASS' : 'FAIL')) + ' - ' + test.name + '</div>';
+
+        if (test.error) {
+          html += '<div class="check check-fail">ERROR: ' + escapeHtml(test.error) + '</div>';
+        } else {
+          for (const check of test.checks) {
+            const cls = check.pass ? 'check-pass' : 'check-fail';
+            const icon = check.pass ? '  OK' : 'FAIL';
+            html += '<div class="check ' + cls + '">[' + icon + '] ' + escapeHtml(check.msg) + '</div>';
+          }
+        }
+        html += '</div>';
+      }
+
+      const summaryClass = totalFail === 0 ? 'summary-pass' : 'summary-fail';
+      html += '<div class="summary ' + summaryClass + '">';
+      html += totalPass + '/' + totalTests + ' tests passed';
+      if (totalFail > 0) html += ', ' + totalFail + ' failed';
+      html += '</div>';
+
+      output.innerHTML = html;
+
+      console.log('=== TEST RESULTS ===');
+      for (const test of results) {
+        if (test.error) {
+          console.log('ERROR - ' + test.name + ': ' + test.error);
+        } else {
+          const allPass = test.checks.every(c => c.pass);
+          console.log((allPass ? 'PASS' : 'FAIL') + ' - ' + test.name);
+          for (const check of test.checks) {
+            if (!check.pass) console.log('  FAIL: ' + check.msg);
+          }
+        }
+      }
+      console.log('=== ' + totalPass + '/' + totalTests + ' passed ===');
+    } catch (e) {
+      output.innerHTML = '<div class="test test-error"><div class="test-name">FATAL ERROR</div><div class="check check-fail">'
+        + escapeHtml(e.message) + '<br><pre>' + escapeHtml(e.stack) + '</pre></div></div>';
+      console.error(e);
+    }
+
+    function escapeHtml(s) {
+      return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+  </script>
+</body>
+</html>
