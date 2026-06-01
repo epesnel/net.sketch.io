@@ -99,6 +99,22 @@ button:hover { background: rgba(255,255,255,0.12); }
 button.primary { background: var(--primary); border-color: var(--primary); color: #fff; }
 button.primary:hover { background: var(--primary-dark); }
 
+#example-select {
+  background: rgba(255,255,255,0.06);
+  color: var(--text);
+  border: 1px solid var(--border);
+  padding: 7px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  font-family: var(--font);
+  cursor: pointer;
+  backdrop-filter: blur(10px);
+  outline: none;
+}
+#example-select:hover { background: rgba(255,255,255,0.12); }
+#example-select option { background: #1c1c1e; color: var(--text); }
+
 main {
   flex: 1;
   display: flex;

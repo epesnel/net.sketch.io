@@ -17,10 +17,188 @@ bundle = '\n'.join(parts)
 with open('style.css') as f:
     css = f.read()
 
-example = "import tensorflow as tf\nfrom tensorflow.keras import layers, Model\n\nclass SimpleUNet(Model):\n    def __init__(self, base_filters=32, num_stages=4):\n        super().__init__()\n        self.num_stages = num_stages\n        self.enc_convs = []\n        self.enc_bns = []\n        self.enc_pools = []\n        for i in range(num_stages - 1):\n            filters = base_filters * (2 ** i)\n            self.enc_convs.append(layers.Conv2D(filters, 3, padding='same'))\n            self.enc_bns.append(layers.BatchNormalization())\n            self.enc_pools.append(layers.MaxPooling2D(2))\n        self.bottleneck = layers.Conv2D(base_filters * (2 ** (num_stages - 1)), 3, padding='same')\n        self.bottleneck_bn = layers.BatchNormalization()\n        self.dec_ups = []\n        self.dec_convs = []\n        self.dec_bns = []\n        for i in range(num_stages - 1):\n            filters = base_filters * (2 ** (num_stages - 2 - i))\n            self.dec_ups.append(layers.UpSampling2D(2))\n            self.dec_convs.append(layers.Conv2D(filters, 3, padding='same'))\n            self.dec_bns.append(layers.BatchNormalization())\n        self.final_conv = layers.Conv2D(3, 1, padding='same')\n\n    def call(self, x, training=False):\n        skips = []\n        for i in range(self.num_stages - 1):\n            x = self.enc_convs[i](x)\n            x = self.enc_bns[i](x)\n            skips.append(x)\n            x = self.enc_pools[i](x)\n        x = self.bottleneck(x)\n        x = self.bottleneck_bn(x)\n        for i in range(self.num_stages - 1):\n            x = self.dec_ups[i](x)\n            x = tf.concat([x, skips[self.num_stages - 2 - i]], axis=-1)\n            x = self.dec_convs[i](x)\n            x = self.dec_bns[i](x)\n        x = self.final_conv(x)\n        return x\n\nmodel = SimpleUNet(base_filters=32, num_stages=4)\n"
+examples = {}
+
+examples["SimpleUNet"] = {"shape": "1, 256, 256, 3", "code": """\
+import tensorflow as tf
+from tensorflow.keras import layers, Model
+
+class SimpleUNet(Model):
+    def __init__(self, base_filters=32, num_stages=4):
+        super().__init__()
+        self.num_stages = num_stages
+        self.enc_convs = []
+        self.enc_bns = []
+        self.enc_pools = []
+        for i in range(num_stages - 1):
+            filters = base_filters * (2 ** i)
+            self.enc_convs.append(layers.Conv2D(filters, 3, padding='same'))
+            self.enc_bns.append(layers.BatchNormalization())
+            self.enc_pools.append(layers.MaxPooling2D(2))
+        self.bottleneck = layers.Conv2D(base_filters * (2 ** (num_stages - 1)), 3, padding='same')
+        self.bottleneck_bn = layers.BatchNormalization()
+        self.dec_ups = []
+        self.dec_convs = []
+        self.dec_bns = []
+        for i in range(num_stages - 1):
+            filters = base_filters * (2 ** (num_stages - 2 - i))
+            self.dec_ups.append(layers.UpSampling2D(2))
+            self.dec_convs.append(layers.Conv2D(filters, 3, padding='same'))
+            self.dec_bns.append(layers.BatchNormalization())
+        self.final_conv = layers.Conv2D(3, 1, padding='same')
+
+    def call(self, x, training=False):
+        skips = []
+        for i in range(self.num_stages - 1):
+            x = self.enc_convs[i](x)
+            x = self.enc_bns[i](x)
+            skips.append(x)
+            x = self.enc_pools[i](x)
+        x = self.bottleneck(x)
+        x = self.bottleneck_bn(x)
+        for i in range(self.num_stages - 1):
+            x = self.dec_ups[i](x)
+            x = tf.concat([x, skips[self.num_stages - 2 - i]], axis=-1)
+            x = self.dec_convs[i](x)
+            x = self.dec_bns[i](x)
+        x = self.final_conv(x)
+        return x
+
+model = SimpleUNet(base_filters=32, num_stages=4)
+"""}
+
+examples["MiniResNet"] = {"shape": "1, 32, 32, 3", "code": """\
+import tensorflow as tf
+from tensorflow.keras import layers, Model
+
+class ResBlock(Model):
+    def __init__(self, filters, strides=(1, 1)):
+        super().__init__()
+        self.conv1 = layers.Conv2D(filters, 3, strides=strides, padding='same', use_bias=False)
+        self.bn1 = layers.BatchNormalization()
+        self.relu1 = layers.ReLU()
+        self.conv2 = layers.Conv2D(filters, 3, padding='same', use_bias=False)
+        self.bn2 = layers.BatchNormalization()
+        self.use_proj = strides != (1, 1)
+        if self.use_proj:
+            self.proj = layers.Conv2D(filters, 1, strides=strides, padding='same', use_bias=False)
+            self.proj_bn = layers.BatchNormalization()
+        self.add = layers.Add()
+        self.relu2 = layers.ReLU()
+
+    def call(self, x):
+        out = self.relu1(self.bn1(self.conv1(x)))
+        out = self.bn2(self.conv2(out))
+        shortcut = self.proj_bn(self.proj(x)) if self.use_proj else x
+        return self.relu2(self.add([out, shortcut]))
+
+class MiniResNet(Model):
+    def __init__(self):
+        super().__init__()
+        self.stem = layers.Conv2D(16, 3, padding='same', use_bias=False)
+        self.bn = layers.BatchNormalization()
+        self.relu = layers.ReLU()
+        self.block1 = ResBlock(16)
+        self.block2 = ResBlock(32, strides=(2, 2))
+        self.block3 = ResBlock(64, strides=(2, 2))
+        self.gap = layers.GlobalAveragePooling2D()
+        self.fc = layers.Dense(10)
+
+    def call(self, x):
+        x = self.relu(self.bn(self.stem(x)))
+        x = self.block1(x)
+        x = self.block2(x)
+        x = self.block3(x)
+        return self.fc(self.gap(x))
+
+model = MiniResNet()
+"""}
+
+examples["AutoEncoder"] = {"shape": "1, 32, 32, 3", "code": """\
+import tensorflow as tf
+from tensorflow.keras import layers, Model
+
+class AutoEncoder(Model):
+    def __init__(self):
+        super().__init__()
+        self.enc_conv1 = layers.Conv2D(32, 3, strides=(2, 2), padding='same')
+        self.enc_bn1 = layers.BatchNormalization()
+        self.enc_relu1 = layers.ReLU()
+        self.enc_conv2 = layers.Conv2D(64, 3, strides=(2, 2), padding='same')
+        self.enc_bn2 = layers.BatchNormalization()
+        self.enc_relu2 = layers.ReLU()
+        self.flatten = layers.Flatten()
+        self.enc_dense = layers.Dense(128)
+        self.enc_relu3 = layers.ReLU()
+        self.dec_dense = layers.Dense(8 * 8 * 64)
+        self.dec_relu = layers.ReLU()
+        self.reshape = layers.Reshape((8, 8, 64))
+        self.dec_up1 = layers.UpSampling2D(2)
+        self.dec_conv1 = layers.Conv2D(32, 3, padding='same')
+        self.dec_bn1 = layers.BatchNormalization()
+        self.dec_relu1 = layers.ReLU()
+        self.dec_up2 = layers.UpSampling2D(2)
+        self.dec_conv2 = layers.Conv2D(3, 3, padding='same')
+
+    def call(self, x):
+        x = self.enc_relu1(self.enc_bn1(self.enc_conv1(x)))
+        x = self.enc_relu2(self.enc_bn2(self.enc_conv2(x)))
+        x = self.enc_relu3(self.enc_dense(self.flatten(x)))
+        x = self.dec_relu(self.dec_dense(x))
+        x = self.reshape(x)
+        x = self.dec_relu1(self.dec_bn1(self.dec_conv1(self.dec_up1(x))))
+        return self.dec_conv2(self.dec_up2(x))
+
+model = AutoEncoder()
+"""}
+
+examples["MobileNet-style"] = {"shape": "1, 32, 32, 3", "code": """\
+import tensorflow as tf
+from tensorflow.keras import layers, Model
+
+class DWSepBlock(Model):
+    def __init__(self, filters, strides=(1, 1)):
+        super().__init__()
+        self.dw = layers.DepthwiseConv2D(3, strides=strides, padding='same', use_bias=False)
+        self.bn1 = layers.BatchNormalization()
+        self.relu1 = layers.ReLU()
+        self.pw = layers.Conv2D(filters, 1, padding='same', use_bias=False)
+        self.bn2 = layers.BatchNormalization()
+        self.relu2 = layers.ReLU()
+
+    def call(self, x):
+        x = self.relu1(self.bn1(self.dw(x)))
+        return self.relu2(self.bn2(self.pw(x)))
+
+class MobileNet(Model):
+    def __init__(self):
+        super().__init__()
+        self.stem = layers.Conv2D(16, 3, padding='same', use_bias=False)
+        self.stem_bn = layers.BatchNormalization()
+        self.stem_relu = layers.ReLU()
+        self.b1 = DWSepBlock(16)
+        self.b2 = DWSepBlock(32, strides=(2, 2))
+        self.b3 = DWSepBlock(64, strides=(2, 2))
+        self.b4 = DWSepBlock(128, strides=(2, 2))
+        self.gap = layers.GlobalAveragePooling2D()
+        self.fc = layers.Dense(10)
+
+    def call(self, x):
+        x = self.stem_relu(self.stem_bn(self.stem(x)))
+        x = self.b1(x)
+        x = self.b2(x)
+        x = self.b3(x)
+        x = self.b4(x)
+        return self.fc(self.gap(x))
+
+model = MobileNet()
+"""}
+
+# For backward compat
+example = examples["SimpleUNet"]["code"]
 
 app_js = """
-var EXAMPLE_CODE = """ + json.dumps(example) + """;
+var EXAMPLES = """ + json.dumps(examples) + """;
 var currentRenderer = null;
 var debounceTimer = null;
 function doAnalyze() {
@@ -62,10 +240,12 @@ function doExport() {
   a.download = 'model-graph.svg';
   a.click();
 }
-function loadExample() {
+function loadExample(name) {
+  var ex = EXAMPLES[name || document.getElementById('example-select').value];
+  if (!ex) return;
   var ed = document.getElementById('code-editor');
-  ed.value = EXAMPLE_CODE;
-  document.getElementById('input-shape').value = '1, 256, 256, 3';
+  ed.value = ex.code;
+  document.getElementById('input-shape').value = ex.shape;
   updateHighlight();
   syncEditorSize();
   doAnalyze();
@@ -142,7 +322,15 @@ document.getElementById('copy-code').addEventListener('click', function() {
   });
 });
 var editor = document.getElementById('code-editor');
-editor.value = EXAMPLE_CODE;
+var _sel = document.getElementById('example-select');
+Object.keys(EXAMPLES).forEach(function(k, i) {
+  var opt = document.createElement('option');
+  opt.value = k; opt.textContent = k;
+  if (i === 0) opt.selected = true;
+  _sel.appendChild(opt);
+});
+editor.value = EXAMPLES[_sel.value].code;
+document.getElementById('input-shape').value = EXAMPLES[_sel.value].shape;
 editor.oninput = function() { clearTimeout(debounceTimer); debounceTimer = setTimeout(doAnalyze, 1200); };
 editor.onkeydown = function(e) {
   if (e.key === 'Tab') { e.preventDefault(); var s = editor.selectionStart, end = editor.selectionEnd; editor.value = editor.value.substring(0, s) + '    ' + editor.value.substring(end); editor.selectionStart = editor.selectionEnd = s + 4; updateHighlight(); syncEditorSize(); }
@@ -289,7 +477,7 @@ html = f"""<!DOCTYPE html>
 <header>
 <h1>net<span>.sketch</span></h1>
 <div class="header-actions">
-  <button onclick="loadExample()">Load Example</button>
+  <select id="example-select" onchange="loadExample()"><option value="" disabled>Load example...</option></select>
   <button class="primary" onclick="doAnalyze()">Analyze</button>
   <button onclick="doExport()">Export SVG</button>
 </div>
