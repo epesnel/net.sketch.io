@@ -71,6 +71,7 @@ export class GraphRenderer {
     }
     this.container.innerHTML = '';
     graph = this.mergeActivations(graph);
+    this._lastGraph = graph;
 
     const layout = this.computeLayout(graph);
     const { positions, width, height } = layout;
@@ -613,11 +614,58 @@ export class GraphRenderer {
     if (cfgKeys.length > 0) {
       const editable = new Set(['filters','kernel_size','units','strides','padding','pool_size','size','rate','block_size','output_dim','alpha','use_bias']);
       const selectFields = { padding: ['same','valid'], activation: ['relu','sigmoid','tanh','softmax','linear','swish','elu','selu'] };
+
+      let sharedCount = 0;
+      const dynFields = new Set();
+      if (node.defLine > 0 && this._lastGraph) {
+        for (const other of this._lastGraph.nodes) {
+          if (other.id !== node.id && other.defLine === node.defLine) sharedCount++;
+        }
+        const editor = document.getElementById('code-editor');
+        if (editor) {
+          const srcLine = editor.value.split('\n')[node.defLine - 1] || '';
+          for (const k of cfgKeys) {
+            if (!editable.has(k)) continue;
+            const re = new RegExp('\\b' + k + '\\s*=\\s*([^,)]+)');
+            const m = srcLine.match(re);
+            if (m) {
+              const val = m[1].trim();
+              if (/[a-zA-Z_]/.test(val) && !/^['"]/.test(val) && val !== 'True' && val !== 'False') {
+                dynFields.add(k);
+              }
+            } else {
+              const posMap = { Conv2D: ['filters','kernel_size'], Conv2DTranspose: ['filters','kernel_size'], Dense: ['units'], DepthwiseConv2D: ['kernel_size'], MaxPooling2D: ['pool_size'], UpSampling2D: ['size'] };
+              const positionals = posMap[node.type] || [];
+              const posIdx = positionals.indexOf(k);
+              if (posIdx >= 0) {
+                const paren = srcLine.indexOf('(');
+                if (paren >= 0) {
+                  const argsStr = srcLine.substring(paren + 1);
+                  const parts = argsStr.split(',');
+                  if (posIdx < parts.length) {
+                    const pval = parts[posIdx].trim().replace(/[)]/g, '');
+                    if (/[a-zA-Z_]/.test(pval) && !/^['"]/.test(pval) && !/^\(/.test(pval)) {
+                      dynFields.add(k);
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+
       html += '<div class="info-section"><div class="info-section-title">Config</div>';
+
+      if (sharedCount > 0) {
+        html += '<div class="info-warn">Shared definition — editing affects ' + (sharedCount + 1) + ' layers</div>';
+      }
+
       for (const k of cfgKeys) {
         const v = cfg[k];
         html += '<div class="info-row"><span class="info-label">' + k + '</span>';
-        if (node.defLine > 0 && editable.has(k)) {
+        const canEdit = node.defLine > 0 && editable.has(k) && !dynFields.has(k);
+        if (canEdit) {
           if (selectFields[k]) {
             html += '<select class="info-input" data-field="' + k + '">';
             for (const opt of selectFields[k]) {
@@ -632,6 +680,7 @@ export class GraphRenderer {
           }
         } else {
           html += '<span class="info-value">' + (typeof v === 'object' ? JSON.stringify(v) : v) + '</span>';
+          if (dynFields.has(k)) html += '<span class="info-dyn" title="Computed from variable">expr</span>';
         }
         html += '</div>';
       }
