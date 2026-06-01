@@ -6292,25 +6292,54 @@ class Interpreter {
 }
 
 const COLORS = {
-  Input: '#546e7a', Output: '#546e7a',
-  Conv2D: '#1a237e', Conv1D: '#1a237e', Conv3D: '#1a237e',
-  Conv2DTranspose: '#283593', Conv1DTranspose: '#283593',
-  DepthwiseConv2D: '#4e342e', SeparableConv2D: '#4e342e',
-  Dense: '#4a148c',
-  MaxPooling2D: '#37474f', MaxPooling1D: '#37474f',
-  AveragePooling2D: '#455a64', AveragePooling1D: '#455a64',
-  GlobalAveragePooling2D: '#37474f', GlobalMaxPooling2D: '#37474f',
-  UpSampling2D: '#37474f', UpSampling1D: '#37474f',
-  BatchNormalization: '#546e7a', LayerNormalization: '#607d8b', GroupNormalization: '#607d8b',
-  Dropout: '#78909c', SpatialDropout2D: '#78909c',
-  Activation: '#880e4f', ReLU: '#880e4f', LeakyReLU: '#880e4f', PReLU: '#880e4f', ELU: '#880e4f', Softmax: '#880e4f',
-  Flatten: '#455a64', Reshape: '#546e7a',
-  Concatenate: '#37474f', Add: '#37474f', Subtract: '#37474f', Multiply: '#37474f', Average: '#37474f',
-  Resize: '#00695c', SpaceToDepth: '#1a237e', DepthToSpace: '#1a237e',
-  Pad: '#546e7a', Reduce: '#546e7a', Slice: '#546e7a',
-  Embedding: '#4a148c', LSTM: '#311b92', GRU: '#311b92',
-  BinOp: '#37474f',
+  Input: { fill: '#e8eaf6', stroke: '#5c6bc0', text: '#283593' },
+  Output: { fill: '#e8eaf6', stroke: '#5c6bc0', text: '#283593' },
+  Conv2D: { fill: '#e3f2fd', stroke: '#42a5f5', text: '#1565c0' },
+  Conv1D: { fill: '#e3f2fd', stroke: '#42a5f5', text: '#1565c0' },
+  Conv3D: { fill: '#e3f2fd', stroke: '#42a5f5', text: '#1565c0' },
+  Conv2DTranspose: { fill: '#e3f2fd', stroke: '#42a5f5', text: '#1565c0' },
+  Conv1DTranspose: { fill: '#e3f2fd', stroke: '#42a5f5', text: '#1565c0' },
+  DepthwiseConv2D: { fill: '#fff3e0', stroke: '#ffa726', text: '#e65100' },
+  SeparableConv2D: { fill: '#fff3e0', stroke: '#ffa726', text: '#e65100' },
+  Dense: { fill: '#f3e5f5', stroke: '#ab47bc', text: '#6a1b9a' },
+  MaxPooling2D: { fill: '#e0f2f1', stroke: '#26a69a', text: '#00695c' },
+  MaxPooling1D: { fill: '#e0f2f1', stroke: '#26a69a', text: '#00695c' },
+  AveragePooling2D: { fill: '#e0f2f1', stroke: '#26a69a', text: '#00695c' },
+  AveragePooling1D: { fill: '#e0f2f1', stroke: '#26a69a', text: '#00695c' },
+  GlobalAveragePooling2D: { fill: '#e0f2f1', stroke: '#26a69a', text: '#00695c' },
+  GlobalMaxPooling2D: { fill: '#e0f2f1', stroke: '#26a69a', text: '#00695c' },
+  UpSampling2D: { fill: '#e8f5e9', stroke: '#66bb6a', text: '#2e7d32' },
+  UpSampling1D: { fill: '#e8f5e9', stroke: '#66bb6a', text: '#2e7d32' },
+  BatchNormalization: { fill: '#f5f5f5', stroke: '#bdbdbd', text: '#616161' },
+  LayerNormalization: { fill: '#f5f5f5', stroke: '#bdbdbd', text: '#616161' },
+  GroupNormalization: { fill: '#f5f5f5', stroke: '#bdbdbd', text: '#616161' },
+  Dropout: { fill: '#f5f5f5', stroke: '#bdbdbd', text: '#616161' },
+  SpatialDropout2D: { fill: '#f5f5f5', stroke: '#bdbdbd', text: '#616161' },
+  Activation: { fill: '#fce4ec', stroke: '#ef5350', text: '#c62828' },
+  ReLU: { fill: '#fce4ec', stroke: '#ef5350', text: '#c62828' },
+  LeakyReLU: { fill: '#fce4ec', stroke: '#ef5350', text: '#c62828' },
+  PReLU: { fill: '#fce4ec', stroke: '#ef5350', text: '#c62828' },
+  ELU: { fill: '#fce4ec', stroke: '#ef5350', text: '#c62828' },
+  Softmax: { fill: '#fce4ec', stroke: '#ef5350', text: '#c62828' },
+  Flatten: { fill: '#eceff1', stroke: '#78909c', text: '#37474f' },
+  Reshape: { fill: '#eceff1', stroke: '#78909c', text: '#37474f' },
+  Concatenate: { fill: '#fff8e1', stroke: '#ffb300', text: '#ff6f00' },
+  Add: { fill: '#e8f5e9', stroke: '#66bb6a', text: '#2e7d32' },
+  Subtract: { fill: '#fce4ec', stroke: '#ef5350', text: '#c62828' },
+  Multiply: { fill: '#f3e5f5', stroke: '#ab47bc', text: '#6a1b9a' },
+  Average: { fill: '#e0f2f1', stroke: '#26a69a', text: '#00695c' },
+  Resize: { fill: '#e8f5e9', stroke: '#66bb6a', text: '#2e7d32' },
+  SpaceToDepth: { fill: '#ede7f6', stroke: '#7e57c2', text: '#4527a0' },
+  DepthToSpace: { fill: '#ede7f6', stroke: '#7e57c2', text: '#4527a0' },
+  Pad: { fill: '#eceff1', stroke: '#78909c', text: '#37474f' },
+  Reduce: { fill: '#eceff1', stroke: '#78909c', text: '#37474f' },
+  Slice: { fill: '#eceff1', stroke: '#78909c', text: '#37474f' },
+  Embedding: { fill: '#f3e5f5', stroke: '#ab47bc', text: '#6a1b9a' },
+  LSTM: { fill: '#ede7f6', stroke: '#7e57c2', text: '#4527a0' },
+  GRU: { fill: '#ede7f6', stroke: '#7e57c2', text: '#4527a0' },
+  BinOp: { fill: '#eceff1', stroke: '#78909c', text: '#37474f' },
 };
+const DEFAULT_COLOR = { fill: '#eceff1', stroke: '#78909c', text: '#37474f' };
 
 const IDENTITY_TYPES = new Set([
   'BatchNormalization', 'LayerNormalization', 'GroupNormalization',
@@ -6393,14 +6422,6 @@ class GraphRenderer {
 
   computeLayout(graph) {
     const nodeIdx = new Map(graph.nodes.map((n, i) => [n.id, i]));
-    let maxRes = 1, maxCh = 1;
-    for (const n of graph.nodes) {
-      const s = n.outputShape;
-      if (s && s.length >= 4) {
-        if (typeof s[1] === 'number' && s[1] > maxRes) maxRes = s[1];
-        if (typeof s[3] === 'number' && s[3] > maxCh) maxCh = s[3];
-      }
-    }
 
     // Main path for edge styling
     const adj = new Map();
@@ -6432,11 +6453,11 @@ class GraphRenderer {
 
     // Use dagre for layout
     const g = new dagre.graphlib.Graph();
-    g.setGraph({ rankdir: 'LR', nodesep: 8, ranksep: 12, marginx: 20, marginy: 20, align: 'UL' });
+    g.setGraph({ rankdir: 'LR', nodesep: 14, ranksep: 28, marginx: 20, marginy: 20, align: 'UL' });
     g.setDefaultEdgeLabel(function() { return {}; });
 
     for (const node of graph.nodes) {
-      const d = this.nodeDims(node, maxRes, maxCh);
+      const d = this.nodeDims(node);
       g.setNode(node.id, { width: d.w, height: d.h, node: node });
     }
     for (const e of graph.edges) {
@@ -6465,95 +6486,52 @@ class GraphRenderer {
     return { positions, width: maxX + 40, height: maxY + 40 };
   }
 
-  nodeDims(node, maxRes, maxCh) {
-    const s = node.outputShape;
+  nodeDims(node) {
     const isIdentity = IDENTITY_TYPES.has(node.type);
-    if (isIdentity) return { w: 8, h: 40 };
-    if (['Add', 'Subtract', 'Multiply', 'Average'].includes(node.type)) return { w: 24, h: 24 };
-    if (node.type === 'Concatenate') return { w: 24, h: 24 };
-    if (node.type === 'Slice') return { w: 14, h: 40 };
-    const res = (s && s.length >= 4 && typeof s[1] === 'number') ? s[1] : maxRes;
-    const ch = (s && s.length >= 4 && typeof s[3] === 'number') ? s[3] : 16;
-    const resFrac = res / Math.max(1, maxRes);
-    let h = Math.max(70, Math.round(80 + resFrac * 100));
-    let w = Math.max(18, Math.min(32, 14 + Math.sqrt(ch / Math.max(1, maxCh)) * 18));
-    if (node.type === 'Input' || node.type === 'Output') { w = 22; }
-    if (node.type === 'Resize') { w = 30; }
-    if (node.type === 'SpaceToDepth' || node.type === 'DepthToSpace') { w = 22; }
-    return { w: Math.round(w), h: Math.round(h) };
+    if (isIdentity) return { w: 56, h: 24 };
+    if (['Add', 'Subtract', 'Multiply', 'Average'].includes(node.type)) return { w: 28, h: 28 };
+    if (node.type === 'Concatenate') return { w: 28, h: 28 };
+    if (node.type === 'Slice') return { w: 56, h: 28 };
+    if (node.type === 'Input' || node.type === 'Output') return { w: 64, h: 32 };
+    return { w: 80, h: 36 };
   }
 
   drawNode(parent, node, pos) {
     if (!pos) return;
     const { x, y, w, h } = pos;
-    const color = COLORS[node.type] || '#607d8b';
+    const c = COLORS[node.type] || DEFAULT_COLOR;
     const isIdentity = IDENTITY_TYPES.has(node.type);
     const isOp = ['Add', 'Subtract', 'Multiply', 'Average', 'Concatenate'].includes(node.type);
+    const font = "'Inter', 'Helvetica Neue', Arial, sans-serif";
 
     const g = this.el('g', { class: 'graph-node', 'data-id': node.id, transform: `translate(${x}, ${y})` });
-    const isResize = node.type === 'Resize';
 
-    if (isResize) {
-      const inH = node.inputShapes?.[0]?.[1];
-      const outH = node.outputShape?.[1];
-      const isDown = (typeof inH === 'number' && typeof outH === 'number') ? outH < inH : true;
-      const inset = h * 0.22;
-      const tL = isDown ? 0 : inset;
-      const tR = isDown ? inset : 0;
-      const bL = isDown ? h : h - inset;
-      const bR = isDown ? h - inset : h;
-      const pts = `0,${tL} ${w},${tR} ${w},${bR} 0,${bL}`;
-      const shadow = this.el('polygon', { points: `1,${tL+1} ${w+1},${tR+1} ${w+1},${bR+1} 1,${bL+1}`, fill: 'rgba(0,0,0,0.08)', 'pointer-events': 'none' });
-      g.appendChild(shadow);
-      const poly = this.el('polygon', { points: pts, fill: color, opacity: 0.92 });
-      g.appendChild(poly);
-      const textG = this.el('g', { transform: `translate(${w/2}, ${h/2}) rotate(-90)` });
-      const txt = this.el('text', { x: 0, y: 0, 'text-anchor': 'middle', 'dominant-baseline': 'central', fill: '#fff', 'font-size': '8px', 'font-weight': '600', 'font-family': "'Inter', 'SF Pro Text', system-ui, sans-serif" });
-      txt.textContent = this.shortLabel(node);
-      textG.appendChild(txt);
-      g.appendChild(textG);
-    } else if (isOp) {
+    if (isOp) {
       const r = Math.min(w, h) / 2;
       const cx = w / 2, cy = h / 2;
-      const shadow = this.el('circle', { cx: cx + 1, cy: cy + 1, r, fill: 'rgba(0,0,0,0.1)', 'pointer-events': 'none' });
-      g.appendChild(shadow);
-      const circle = this.el('circle', { cx, cy, r, fill: color, opacity: 0.92, stroke: 'none' });
-      g.appendChild(circle);
+      g.appendChild(this.el('circle', { cx, cy, r, fill: c.fill, stroke: c.stroke, 'stroke-width': 1.5 }));
       const sym = node.type === 'Add' ? '+' : node.type === 'Subtract' ? '−' : node.type === 'Multiply' ? '×' : node.type === 'Concatenate' ? 'C' : 'ø';
-      const fontSize = node.type === 'Concatenate' ? '10px' : '16px';
       const symEl = this.el('text', {
         x: cx, y: cy, 'text-anchor': 'middle', 'dominant-baseline': 'central',
-        fill: '#fff', 'font-size': fontSize, 'font-weight': '700', 'font-family': "'Inter', 'SF Pro Text', system-ui, sans-serif",
+        fill: c.text, 'font-size': node.type === 'Concatenate' ? '10px' : '14px', 'font-weight': '600', 'font-family': font,
       });
       symEl.textContent = sym;
       g.appendChild(symEl);
     } else {
-      const shadow = this.el('rect', {
-        x: 1, y: 1, width: w, height: h, rx: isIdentity ? 4 : 6, ry: isIdentity ? 4 : 6,
-        fill: 'rgba(0,0,0,0.1)', stroke: 'none', 'pointer-events': 'none',
-      });
-      g.appendChild(shadow);
-      const rect = this.el('rect', {
-        x: 0, y: 0, width: w, height: h, rx: isIdentity ? 4 : 6, ry: isIdentity ? 4 : 6,
-        fill: color, opacity: isIdentity ? 0.7 : 0.92, stroke: 'none',
-      });
-      g.appendChild(rect);
+      const rx = isIdentity ? 4 : 6;
+      g.appendChild(this.el('rect', {
+        x: 0, y: 0, width: w, height: h, rx, ry: rx,
+        fill: c.fill, stroke: c.stroke, 'stroke-width': 1.5,
+      }));
 
-      {
-        const typeName = isIdentity ? this.shortType(node.type) : this.shortTypeName(node.type);
-        const paramStr = isIdentity ? '' : this.shortLabel(node);
-        const parts = [typeName, paramStr].filter(Boolean);
-        const label = parts.join(', ');
-
-        const textG = this.el('g', { transform: `translate(${w/2}, ${h/2}) rotate(-90)` });
-        const txt = this.el('text', {
-          x: 0, y: 0, 'text-anchor': 'middle', 'dominant-baseline': 'central',
-          fill: '#fff', 'font-size': '8px', 'font-weight': isIdentity ? '400' : '600', 'font-family': "'Inter', 'SF Pro Text', system-ui, sans-serif",
-        });
-        txt.textContent = label;
-        textG.appendChild(txt);
-        g.appendChild(textG);
-      }
+      const label = isIdentity ? this.shortType(node.type) : this.shortTypeName(node.type);
+      const txt = this.el('text', {
+        x: w / 2, y: h / 2, 'text-anchor': 'middle', 'dominant-baseline': 'central',
+        fill: c.text, 'font-size': isIdentity ? '8px' : '9px', 'font-weight': '600',
+        'font-family': font, 'letter-spacing': '0.3px',
+      });
+      txt.textContent = label;
+      g.appendChild(txt);
     }
 
     const title = this.el('title');
@@ -6738,10 +6716,10 @@ class GraphRenderer {
 
     const path = this.el('path', {
       d, fill: 'none',
-      stroke: isMainEdge ? '#78909c' : '#90a4ae',
-      'stroke-width': isMainEdge ? 1.5 : 1.2,
-      'marker-end': 'url(#arrow)',
-      opacity: isMainEdge ? 0.8 : 0.55,
+      stroke: isMainEdge ? '#546e7a' : '#90a4ae',
+      'stroke-width': isMainEdge ? 1.4 : 1,
+      'marker-end': isMainEdge ? 'url(#arrow)' : 'url(#arrow-light)',
+      opacity: isMainEdge ? 0.7 : 0.45,
       class: 'graph-edge',
       'data-from': edge.from, 'data-to': edge.to,
     });
@@ -6842,32 +6820,29 @@ class GraphRenderer {
     const self = this;
     for (const g of this.svg.querySelectorAll('.graph-node')) {
       g.addEventListener('mouseenter', () => {
-        const shape = g.querySelector('rect, circle, polygon');
+        const shape = g.querySelector('rect, circle');
         if (shape) {
-          shape.setAttribute('opacity', '1');
-          shape.setAttribute('stroke', '#fff');
-          shape.setAttribute('stroke-width', '2');
+          shape.setAttribute('stroke-width', '2.5');
+          shape.setAttribute('filter', 'url(#hover-shadow)');
         }
         const id = g.getAttribute('data-id');
         for (const edge of self.svg.querySelectorAll('.graph-edge')) {
           if (edge.getAttribute('data-from') === id || edge.getAttribute('data-to') === id) {
-            edge.setAttribute('stroke-width', '3');
-            edge.setAttribute('opacity', '1');
+            edge.setAttribute('stroke-width', '2.5');
+            edge.setAttribute('opacity', '0.9');
           }
         }
       });
       g.addEventListener('mouseleave', () => {
-        const shape = g.querySelector('rect, circle, polygon');
-        const node = graph.nodes.find(n => n.id === g.getAttribute('data-id'));
-        const isId = node && IDENTITY_TYPES.has(node.type);
+        const shape = g.querySelector('rect, circle');
         if (shape) {
-          shape.setAttribute('opacity', isId ? '0.7' : '0.92');
-          shape.setAttribute('stroke', 'none');
+          shape.setAttribute('stroke-width', '1.5');
+          shape.removeAttribute('filter');
         }
         for (const edge of self.svg.querySelectorAll('.graph-edge')) {
           const isMain = self._mainEdges && self._mainEdges.has(edge.getAttribute('data-from') + ':' + edge.getAttribute('data-to'));
-          edge.setAttribute('stroke-width', isMain ? '1.5' : '1.2');
-          edge.setAttribute('opacity', isMain ? '0.8' : '0.55');
+          edge.setAttribute('stroke-width', isMain ? '1.4' : '1');
+          edge.setAttribute('opacity', isMain ? '0.7' : '0.45');
         }
       });
       g.addEventListener('click', (e) => {
@@ -7139,11 +7114,11 @@ class GraphRenderer {
   exportSVG() {
     if (!this.svg) return null;
     const clone = this.svg.cloneNode(true);
+    const bg = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    bg.setAttribute('width', '100%'); bg.setAttribute('height', '100%'); bg.setAttribute('fill', '#ffffff');
+    clone.insertBefore(bg, clone.firstChild);
     const style = document.createElementNS('http://www.w3.org/2000/svg', 'style');
-    style.textContent = `
-      text { font-family: system-ui, -apple-system, sans-serif; }
-      .graph-node { cursor: pointer; }
-    `;
+    style.textContent = `text { font-family: 'Helvetica Neue', Arial, sans-serif; }`;
     clone.insertBefore(style, clone.firstChild);
     const serializer = new XMLSerializer();
     return serializer.serializeToString(clone);
@@ -7217,10 +7192,15 @@ class GraphRenderer {
 
   addDefs() {
     const defs = this.el('defs');
-    const marker = this.el('marker', { id: 'arrow', viewBox: '0 0 10 6', refX: 10, refY: 3, markerWidth: 8, markerHeight: 6, orient: 'auto-start-reverse' });
-    const poly = this.el('polygon', { points: '0 0, 10 3, 0 6', fill: '#78909c' });
-    marker.appendChild(poly);
-    defs.appendChild(marker);
+    const m1 = this.el('marker', { id: 'arrow', viewBox: '0 0 8 6', refX: 8, refY: 3, markerWidth: 6, markerHeight: 5, orient: 'auto-start-reverse' });
+    m1.appendChild(this.el('path', { d: 'M0,0.5 L7,3 L0,5.5', fill: 'none', stroke: '#546e7a', 'stroke-width': '1.2', 'stroke-linejoin': 'round' }));
+    defs.appendChild(m1);
+    const m2 = this.el('marker', { id: 'arrow-light', viewBox: '0 0 8 6', refX: 8, refY: 3, markerWidth: 6, markerHeight: 5, orient: 'auto-start-reverse' });
+    m2.appendChild(this.el('path', { d: 'M0,0.5 L7,3 L0,5.5', fill: 'none', stroke: '#90a4ae', 'stroke-width': '1', 'stroke-linejoin': 'round' }));
+    defs.appendChild(m2);
+    const filter = this.el('filter', { id: 'hover-shadow', x: '-20%', y: '-20%', width: '140%', height: '140%' });
+    filter.appendChild(this.el('feDropShadow', { dx: 0, dy: 1, stdDeviation: 2, 'flood-opacity': 0.15 }));
+    defs.appendChild(filter);
     this.svg.appendChild(defs);
   }
 
