@@ -129,6 +129,14 @@ export class GraphRenderer {
 
   computeLayout(graph) {
     const nodeIdx = new Map(graph.nodes.map((n, i) => [n.id, i]));
+    let maxRes = 1, maxCh = 1;
+    for (const n of graph.nodes) {
+      const s = n.outputShape;
+      if (s && s.length >= 4) {
+        if (typeof s[1] === 'number' && s[1] > maxRes) maxRes = s[1];
+        if (typeof s[3] === 'number' && s[3] > maxCh) maxCh = s[3];
+      }
+    }
 
     // Main path for edge styling
     const adj = new Map();
@@ -164,7 +172,7 @@ export class GraphRenderer {
     g.setDefaultEdgeLabel(function() { return {}; });
 
     for (const node of graph.nodes) {
-      const d = this.nodeDims(node);
+      const d = this.nodeDims(node, maxRes, maxCh);
       g.setNode(node.id, { width: d.w, height: d.h, node: node });
     }
     for (const e of graph.edges) {
@@ -193,22 +201,31 @@ export class GraphRenderer {
     return { positions, width: maxX + 40, height: maxY + 40 };
   }
 
-  nodeDims(node) {
+  nodeDims(node, maxRes, maxCh) {
     const isIdentity = IDENTITY_TYPES.has(node.type);
     if (isIdentity) return { w: 10, h: 44 };
     if (['Add', 'Subtract', 'Multiply', 'Average'].includes(node.type)) return { w: 22, h: 22 };
     if (node.type === 'Concatenate') return { w: 22, h: 22 };
     if (node.type === 'Slice') return { w: 12, h: 44 };
 
+    const s = node.outputShape;
+    const res = (s && s.length >= 4 && typeof s[1] === 'number') ? s[1] : maxRes;
+    const ch = (s && s.length >= 4 && typeof s[3] === 'number') ? s[3] : 16;
+
+    const resFrac = res / Math.max(1, maxRes);
+    const hShape = 40 + resFrac * 100;
+
     const typeName = this.shortTypeName(node.type);
     const paramStr = this.shortLabel(node);
     const label = [typeName, paramStr].filter(Boolean).join(', ');
-    const charW = 5.2;
-    const textLen = label.length * charW;
-    const minH = Math.max(50, textLen + 16);
+    const hText = label.length * 5.2 + 16;
 
-    if (node.type === 'Input' || node.type === 'Output') return { w: 18, h: Math.max(50, minH) };
-    return { w: 20, h: Math.round(minH) };
+    const h = Math.round(Math.max(hText, hShape));
+
+    const chFrac = ch / Math.max(1, maxCh);
+    const w = Math.round(Math.max(14, 12 + Math.sqrt(chFrac) * 20));
+
+    return { w, h };
   }
 
   drawNode(parent, node, pos) {
