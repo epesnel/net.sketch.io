@@ -827,6 +827,91 @@ export class GraphRenderer {
     }
   }
 
+  applyView(mode) {
+    if (!this._lastGraph || !this.nodeElements) return;
+    const graph = this._lastGraph;
+
+    if (mode === 'type') {
+      for (const node of graph.nodes) {
+        const el = this.nodeElements[node.id];
+        if (!el) continue;
+        const c = COLORS[node.type] || DEFAULT_COLOR;
+        const shape = el.querySelector('rect, circle');
+        if (shape) { shape.setAttribute('fill', c.fill); shape.setAttribute('stroke', c.stroke); }
+        const txt = el.querySelector('text');
+        if (txt) txt.setAttribute('fill', c.text);
+      }
+      this._removeLegend();
+      return;
+    }
+
+    let values = [];
+    for (const node of graph.nodes) {
+      const v = mode === 'macs' ? this.estimateMACs(node) : (node.params || 0);
+      values.push({ node, v });
+    }
+    const maxV = Math.max(1, ...values.map(x => x.v));
+
+    for (const { node, v } of values) {
+      const el = this.nodeElements[node.id];
+      if (!el) continue;
+      const t = maxV > 0 ? v / maxV : 0;
+      const fill = this._heatColor(t);
+      const stroke = this._heatColor(Math.min(1, t + 0.2));
+      const shape = el.querySelector('rect, circle');
+      if (shape) { shape.setAttribute('fill', fill); shape.setAttribute('stroke', stroke); }
+      const txt = el.querySelector('text');
+      if (txt) txt.setAttribute('fill', t > 0.5 ? '#fff' : '#333');
+    }
+    this._showLegend(mode, maxV);
+  }
+
+  _heatColor(t) {
+    t = Math.max(0, Math.min(1, t));
+    if (t < 0.5) {
+      const r = Math.round(255);
+      const g = Math.round(255 - t * 2 * 80);
+      const b = Math.round(255 - t * 2 * 200);
+      return `rgb(${r},${g},${b})`;
+    }
+    const r = Math.round(255 - (t - 0.5) * 2 * 60);
+    const g = Math.round(175 - (t - 0.5) * 2 * 140);
+    const b = Math.round(55 - (t - 0.5) * 2 * 55);
+    return `rgb(${r},${g},${b})`;
+  }
+
+  _showLegend(mode, maxV) {
+    this._removeLegend();
+    if (!this.svg) return;
+    const mainG = this.svg.querySelector('g');
+    if (!mainG) return;
+    const lg = this.el('g', { class: 'heatmap-legend', transform: 'translate(10, 10)' });
+    const gradId = 'heat-grad';
+    const defs = this.svg.querySelector('defs');
+    const grad = this.el('linearGradient', { id: gradId, x1: '0', y1: '0', x2: '1', y2: '0' });
+    grad.appendChild(this.el('stop', { offset: '0%', 'stop-color': this._heatColor(0) }));
+    grad.appendChild(this.el('stop', { offset: '50%', 'stop-color': this._heatColor(0.5) }));
+    grad.appendChild(this.el('stop', { offset: '100%', 'stop-color': this._heatColor(1) }));
+    defs.appendChild(grad);
+    lg.appendChild(this.el('rect', { x: 0, y: 0, width: 120, height: 10, rx: 3, fill: `url(#${gradId})`, stroke: '#ccc', 'stroke-width': 0.5 }));
+    const font = "'Inter', 'Helvetica Neue', Arial, sans-serif";
+    const label = this.el('text', { x: 0, y: 22, fill: '#666', 'font-size': '8px', 'font-family': font });
+    label.textContent = '0';
+    lg.appendChild(label);
+    const maxLabel = this.el('text', { x: 120, y: 22, fill: '#666', 'font-size': '8px', 'text-anchor': 'end', 'font-family': font });
+    maxLabel.textContent = this.formatNum(maxV) + (mode === 'macs' ? ' MACs' : ' params');
+    lg.appendChild(maxLabel);
+    mainG.appendChild(lg);
+  }
+
+  _removeLegend() {
+    if (!this.svg) return;
+    const old = this.svg.querySelector('.heatmap-legend');
+    if (old) old.remove();
+    const oldGrad = this.svg.querySelector('#heat-grad');
+    if (oldGrad) oldGrad.remove();
+  }
+
   addStats(graph) {
     let totalParams = 0, totalMACs = 0;
     for (const n of graph.nodes) {

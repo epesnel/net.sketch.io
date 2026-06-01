@@ -182,7 +182,20 @@ main {
   color: #6e6e73;
   background: #f8f8f8;
   border-bottom: 1px solid rgba(0,0,0,0.06);
+  justify-content: space-between;
 }
+
+.view-toggle {
+  display: flex; gap: 2px; margin-left: auto;
+  background: rgba(0,0,0,0.05); border-radius: 5px; padding: 2px;
+}
+.view-btn {
+  background: none; border: none; color: #999; cursor: pointer;
+  font-size: 10px; font-weight: 600; padding: 3px 8px; border-radius: 4px;
+  font-family: var(--font); letter-spacing: 0.3px; transition: all 0.15s;
+}
+.view-btn:hover { color: #555; }
+.view-btn.active { background: #fff; color: #333; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
 
 .graph-panel-wrapper .panel-header::before {
   content: '';

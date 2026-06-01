@@ -149,6 +149,15 @@ editor.onkeydown = function(e) {
 };
 doAnalyze();
 
+// View toggle
+document.querySelectorAll('.view-btn').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    document.querySelectorAll('.view-btn').forEach(function(b) { b.classList.remove('active'); });
+    btn.classList.add('active');
+    if (currentRenderer) currentRenderer.applyView(btn.dataset.view);
+  });
+});
+
 // Resize handles
 document.querySelectorAll('.resize-handle').forEach(function(handle) {
   var leftId = handle.getAttribute('data-left');
@@ -303,7 +312,13 @@ html = f"""<!DOCTYPE html>
 </div>
 <div class="resize-handle" data-left="editor-panel" data-right="graph-wrapper"></div>
 <div class="panel graph-panel-wrapper" id="graph-wrapper">
-  <div class="panel-header">Model Graph</div>
+  <div class="panel-header">Model Graph
+    <div class="view-toggle">
+      <button class="view-btn active" data-view="type" title="Color by layer type">Type</button>
+      <button class="view-btn" data-view="macs" title="MACs heatmap">MACs</button>
+      <button class="view-btn" data-view="params" title="Parameter count heatmap">Params</button>
+    </div>
+  </div>
   <div id="graph-panel"></div>
 </div>
 <div class="resize-handle" data-left="graph-wrapper" data-right="info-wrapper"></div>
