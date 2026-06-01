@@ -882,34 +882,17 @@ export class GraphRenderer {
 
   _showLegend(mode, maxV) {
     this._removeLegend();
-    if (!this.svg) return;
-    const mainG = this.svg.querySelector('g');
-    if (!mainG) return;
-    const lg = this.el('g', { class: 'heatmap-legend', transform: 'translate(10, 10)' });
-    const gradId = 'heat-grad';
-    const defs = this.svg.querySelector('defs');
-    const grad = this.el('linearGradient', { id: gradId, x1: '0', y1: '0', x2: '1', y2: '0' });
-    grad.appendChild(this.el('stop', { offset: '0%', 'stop-color': this._heatColor(0) }));
-    grad.appendChild(this.el('stop', { offset: '50%', 'stop-color': this._heatColor(0.5) }));
-    grad.appendChild(this.el('stop', { offset: '100%', 'stop-color': this._heatColor(1) }));
-    defs.appendChild(grad);
-    lg.appendChild(this.el('rect', { x: 0, y: 0, width: 120, height: 10, rx: 3, fill: `url(#${gradId})`, stroke: '#ccc', 'stroke-width': 0.5 }));
-    const font = "'Inter', 'Helvetica Neue', Arial, sans-serif";
-    const label = this.el('text', { x: 0, y: 22, fill: '#666', 'font-size': '8px', 'font-family': font });
-    label.textContent = '0';
-    lg.appendChild(label);
-    const maxLabel = this.el('text', { x: 120, y: 22, fill: '#666', 'font-size': '8px', 'text-anchor': 'end', 'font-family': font });
-    maxLabel.textContent = this.formatNum(maxV) + (mode === 'macs' ? ' MACs' : ' params');
-    lg.appendChild(maxLabel);
-    mainG.appendChild(lg);
+    const panel = document.getElementById('graph-panel');
+    if (!panel) return;
+    const el = document.createElement('div');
+    el.id = 'heatmap-legend';
+    el.innerHTML = '<div class="legend-bar"></div><div class="legend-labels"><span>0</span><span>' + this.formatNum(maxV) + (mode === 'macs' ? ' MACs' : ' params') + '</span></div>';
+    panel.appendChild(el);
   }
 
   _removeLegend() {
-    if (!this.svg) return;
-    const old = this.svg.querySelector('.heatmap-legend');
+    const old = document.getElementById('heatmap-legend');
     if (old) old.remove();
-    const oldGrad = this.svg.querySelector('#heat-grad');
-    if (oldGrad) oldGrad.remove();
   }
 
   addStats(graph) {

@@ -197,6 +197,21 @@ main {
 .view-btn:hover { color: #555; }
 .view-btn.active { background: #fff; color: #333; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
 
+#heatmap-legend {
+  position: absolute; bottom: 12px; right: 12px;
+  background: rgba(255,255,255,0.92); border: 1px solid rgba(0,0,0,0.1);
+  border-radius: 6px; padding: 8px 12px; z-index: 5;
+  backdrop-filter: blur(6px); box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+.legend-bar {
+  width: 140px; height: 8px; border-radius: 4px;
+  background: linear-gradient(to right, #fff, #ffb74d, #e53935);
+}
+.legend-labels {
+  display: flex; justify-content: space-between; margin-top: 4px;
+  font-size: 9px; color: #888; font-family: var(--font);
+}
+
 .graph-panel-wrapper .panel-header::before {
   content: '';
   display: flex;
