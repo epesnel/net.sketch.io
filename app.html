@@ -6584,7 +6584,7 @@ class GraphRenderer {
     const isIdentity = IDENTITY_TYPES.has(node.type);
     const isActivation = ['ReLU', 'LeakyReLU', 'PReLU', 'ELU', 'Activation', 'Softmax'].includes(node.type);
     if (isActivation) return { w: 24, h: 28 };
-    if (isIdentity) return { w: 10, h: 44 };
+    if (isIdentity) return { w: 14, h: 44 };
     if (['Add', 'Subtract', 'Multiply', 'Average'].includes(node.type)) return { w: 22, h: 22 };
     if (node.type === 'Concatenate') return { w: 22, h: 22 };
     if (node.type === 'Slice') return { w: 12, h: 44 };
@@ -6634,11 +6634,6 @@ class GraphRenderer {
       const tL = padL, tR = padR;
       const bL = h - padL, bR = h - padR;
       g.appendChild(this.el('polygon', { points: `0,${tL} ${w},${tR} ${w},${bR} 0,${bL}`, fill: c.fill, stroke: c.stroke, 'stroke-width': 1.2, 'stroke-linejoin': 'round' }));
-      const down = (inRes || 0) > (outRes || 0);
-      const sym = down ? '↓' : '↑';
-      const symEl = this.el('text', { x: w / 2, y: h / 2, 'text-anchor': 'middle', 'dominant-baseline': 'central', fill: c.text, 'font-size': '9px', 'font-family': font });
-      symEl.textContent = sym;
-      g.appendChild(symEl);
     } else if (['ReLU', 'LeakyReLU', 'PReLU', 'ELU', 'Activation', 'Softmax'].includes(node.type)) {
       const actName = node.type === 'Activation' ? 'Act' : node.type;
       const actLbl = this.el('text', { x: w / 2, y: -4, 'text-anchor': 'middle', fill: c.text, 'font-size': '6px', 'font-weight': '600', 'font-family': font });
@@ -6787,7 +6782,7 @@ class GraphRenderer {
       const textG = this.el('g', { transform: `translate(${w / 2}, ${h / 2}) rotate(-90)` });
       const txt = this.el('text', {
         x: 0, y: 0, 'text-anchor': 'middle', 'dominant-baseline': 'central',
-        fill: c.text, 'font-size': isIdentity ? '7px' : '8px', 'font-weight': '600',
+        fill: c.text, 'font-size': isIdentity ? '8px' : '8px', 'font-weight': '600',
         'font-family': font, 'letter-spacing': '0.2px',
       });
       txt.textContent = label;
