@@ -485,8 +485,10 @@ html = f"""<!DOCTYPE html>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <title>net.sketch</title>
+<style>.font-preload {{ font-family: 'IBM Plex Sans'; position: absolute; visibility: hidden; }} </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/svg2pdf.js@2.2.4/dist/svg2pdf.umd.min.js"></script>
 <style>
@@ -494,6 +496,7 @@ html = f"""<!DOCTYPE html>
 </style>
 </head>
 <body>
+<span class="font-preload">x</span>
 <header>
 <h1>net<span>.sketch</span></h1>
 <div class="header-actions">
