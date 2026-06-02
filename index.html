@@ -105,8 +105,8 @@ button {
 }
 
 button:hover { background: rgba(255,255,255,0.12); }
-button.primary { background: var(--primary); border-color: var(--primary); color: #fff; }
-button.primary:hover { background: var(--primary-dark); }
+button.primary { background: linear-gradient(135deg, var(--primary), var(--accent)); border: none; color: #fff; }
+button.primary:hover { background: linear-gradient(135deg, var(--primary-dark), #e89f30); }
 
 #example-select {
   background: rgba(255,255,255,0.06);
@@ -613,6 +613,7 @@ select.info-input { width: auto; min-width: 72px; text-align: left; cursor: poin
   <select id="example-select" onchange="loadExample()"><option value="" disabled>Load example...</option></select>
   <button class="primary" onclick="doAnalyze()">Analyze</button>
   <button onclick="doExport()">Export SVG</button>
+  <button onclick="doExportPDF()">Export PDF</button>
 </div>
 </header>
 <main>
@@ -6383,7 +6384,7 @@ const COLORS = {
   Conv1DTranspose: { fill: '#e3f2fd', stroke: '#42a5f5', text: '#1565c0' },
   DepthwiseConv2D: { fill: '#fff3e0', stroke: '#ffa726', text: '#e65100' },
   SeparableConv2D: { fill: '#fff3e0', stroke: '#ffa726', text: '#e65100' },
-  Dense: { fill: '#f3e5f5', stroke: '#ab47bc', text: '#6a1b9a' },
+  Dense: { fill: '#e8f5e9', stroke: '#66bb6a', text: '#2e7d32' },
   MaxPooling2D: { fill: '#e0f2f1', stroke: '#26a69a', text: '#00695c' },
   MaxPooling1D: { fill: '#e0f2f1', stroke: '#26a69a', text: '#00695c' },
   AveragePooling2D: { fill: '#e0f2f1', stroke: '#26a69a', text: '#00695c' },
@@ -6571,6 +6572,7 @@ class GraphRenderer {
     }
 
     this._nodeIdx = nodeIdx;
+    this._maxRes = maxRes;
     this._branchNodes = [];
     this._dagreGraph = g;
     return { positions, width: maxX + 40, height: maxY + 40 };
@@ -6578,29 +6580,32 @@ class GraphRenderer {
 
   nodeDims(node, maxRes, maxCh) {
     const isIdentity = IDENTITY_TYPES.has(node.type);
+    const isActivation = ['ReLU', 'LeakyReLU', 'PReLU', 'ELU', 'Activation', 'Softmax'].includes(node.type);
+    if (isActivation) return { w: 24, h: 28 };
     if (isIdentity) return { w: 10, h: 44 };
     if (['Add', 'Subtract', 'Multiply', 'Average'].includes(node.type)) return { w: 22, h: 22 };
     if (node.type === 'Concatenate') return { w: 22, h: 22 };
     if (node.type === 'Slice') return { w: 12, h: 44 };
+    if (node.type === 'Flatten') return { w: 22, h: 52 };
+    if (node.type === 'Dense') return { w: 22, h: 60 };
 
     const s = node.outputShape;
     const res = (s && s.length >= 4 && typeof s[1] === 'number') ? s[1] : maxRes;
     const ch = (s && s.length >= 4 && typeof s[3] === 'number') ? s[3] : 16;
-
     const resFrac = res / Math.max(1, maxRes);
-    const hShape = 40 + resFrac * 100;
+    const hShape = Math.round(40 + resFrac * 110);
 
-    const typeName = this.shortTypeName(node.type);
-    const paramStr = this.shortLabel(node);
-    const label = [typeName, paramStr].filter(Boolean).join(', ');
-    const hText = label.length * 5.2 + 16;
-
-    const h = Math.round(Math.max(hText, hShape));
+    const isPool = ['MaxPooling2D','MaxPooling1D','AveragePooling2D','AveragePooling1D','GlobalAveragePooling2D','GlobalMaxPooling2D','UpSampling2D','UpSampling1D','Resize'].includes(node.type);
+    if (isPool) {
+      const inRes = node.inputShapes?.[0]?.[1];
+      const inFrac = (typeof inRes === 'number' ? inRes : res) / Math.max(1, maxRes);
+      const hPool = Math.round(40 + Math.max(resFrac, inFrac) * 110);
+      return { w: 22, h: Math.max(40, hPool) };
+    }
 
     const chFrac = ch / Math.max(1, maxCh);
     const w = Math.round(Math.max(14, 12 + Math.sqrt(chFrac) * 20));
-
-    return { w, h };
+    return { w, h: hShape };
   }
 
   drawNode(parent, node, pos) {
@@ -6613,7 +6618,49 @@ class GraphRenderer {
 
     const g = this.el('g', { class: 'graph-node', 'data-id': node.id, transform: `translate(${x}, ${y})` });
 
-    if (isOp) {
+    const isDown = ['MaxPooling2D','MaxPooling1D','AveragePooling2D','AveragePooling1D','GlobalAveragePooling2D','GlobalMaxPooling2D'].includes(node.type);
+    const isUp = ['UpSampling2D','UpSampling1D'].includes(node.type);
+    const isResize = node.type === 'Resize';
+    if (isDown || isUp || isResize) {
+      const inS = node.inputShapes?.[0], outS = node.outputShape;
+      const inRes = (inS && inS.length >= 4 && typeof inS[1] === 'number') ? inS[1] : null;
+      const outRes = (outS && outS.length >= 4 && typeof outS[1] === 'number') ? outS[1] : null;
+      const mr = this._maxRes || 1;
+      const hIn = inRes !== null ? Math.max(20, 40 + (inRes / mr) * 110) : h;
+      const hOut = outRes !== null ? Math.max(20, 40 + (outRes / mr) * 110) : h;
+      const padL = (h - Math.min(hIn, h)) / 2, padR = (h - Math.min(hOut, h)) / 2;
+      const tL = padL, tR = padR;
+      const bL = h - padL, bR = h - padR;
+      g.appendChild(this.el('polygon', { points: `0,${tL} ${w},${tR} ${w},${bR} 0,${bL}`, fill: c.fill, stroke: c.stroke, 'stroke-width': 1.2, 'stroke-linejoin': 'round' }));
+      const down = (inRes || 0) > (outRes || 0);
+      const sym = down ? '↓' : '↑';
+      const symEl = this.el('text', { x: w / 2, y: h / 2, 'text-anchor': 'middle', 'dominant-baseline': 'central', fill: c.text, 'font-size': '9px', 'font-family': font });
+      symEl.textContent = sym;
+      g.appendChild(symEl);
+    } else if (['ReLU', 'LeakyReLU', 'PReLU', 'ELU', 'Activation', 'Softmax'].includes(node.type)) {
+      const actName = node.type === 'Activation' ? 'Act' : node.type;
+      const actLbl = this.el('text', { x: w / 2, y: -4, 'text-anchor': 'middle', fill: c.text, 'font-size': '6px', 'font-weight': '600', 'font-family': font });
+      actLbl.textContent = actName;
+      g.appendChild(actLbl);
+      g.appendChild(this.el('rect', { x: 0, y: 0, width: w, height: h, rx: 4, ry: 4, fill: 'none', stroke: c.stroke, 'stroke-width': 1 }));
+      const px = 5, py = 4, iw = w - px * 2, ih = h - py * 2;
+      const ox = px + iw * 0.4, oy = py + ih * 0.6;
+      g.appendChild(this.el('line', { x1: px, y1: oy, x2: px + iw, y2: oy, stroke: '#aaa', 'stroke-width': 0.6 }));
+      g.appendChild(this.el('line', { x1: ox, y1: py + ih, x2: ox, y2: py, stroke: '#aaa', 'stroke-width': 0.6 }));
+      g.appendChild(this.el('path', { d: `M${px + iw - 1},${oy - 1.5} L${px + iw + 0.5},${oy} L${px + iw - 1},${oy + 1.5}`, fill: 'none', stroke: '#aaa', 'stroke-width': 0.6 }));
+      g.appendChild(this.el('path', { d: `M${ox - 1.5},${py + 1} L${ox},${py - 0.5} L${ox + 1.5},${py + 1}`, fill: 'none', stroke: '#aaa', 'stroke-width': 0.6 }));
+      let shapePath;
+      if (node.type === 'ReLU' || node.type === 'Activation') {
+        shapePath = `M${px + 1},${oy} L${ox},${oy} L${px + iw - 1},${py + 2}`;
+      } else if (node.type === 'LeakyReLU' || node.type === 'PReLU') {
+        shapePath = `M${px + 1},${oy - ih * 0.1} L${ox},${oy} L${px + iw - 1},${py + 2}`;
+      } else if (node.type === 'ELU') {
+        shapePath = `M${px + 1},${oy - 1} Q${ox - 2},${oy} ${ox},${oy} L${px + iw - 1},${py + 2}`;
+      } else {
+        shapePath = `M${px + 1},${py + ih - 2} C${px + iw * 0.25},${py + ih - 2} ${px + iw * 0.75},${py + 2} ${px + iw - 1},${py + 2}`;
+      }
+      g.appendChild(this.el('path', { d: shapePath, fill: 'none', stroke: c.stroke, 'stroke-width': 1.5, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }));
+    } else if (isOp) {
       const r = Math.min(w, h) / 2;
       const cx = w / 2, cy = h / 2;
       g.appendChild(this.el('circle', { cx, cy, r, fill: c.fill, stroke: c.stroke, 'stroke-width': 1.5 }));
@@ -6624,6 +6671,106 @@ class GraphRenderer {
       });
       symEl.textContent = sym;
       g.appendChild(symEl);
+    } else if (node.type === 'Dense') {
+      const topLbl = this.el('text', { x: w / 2, y: -4, 'text-anchor': 'middle', fill: c.text, 'font-size': '6.5px', 'font-weight': '600', 'font-family': font });
+      topLbl.textContent = 'Dense';
+      g.appendChild(topLbl);
+      g.appendChild(this.el('rect', {
+        x: 0, y: 0, width: w, height: h, rx: 5, ry: 5,
+        fill: 'none', stroke: c.stroke, 'stroke-width': 1.2,
+      }));
+      const botLbl = this.el('text', { x: w / 2, y: h + 9, 'text-anchor': 'middle', fill: c.text, 'font-size': '5.5px', 'font-family': font, opacity: 0.7 });
+      botLbl.textContent = this.shortLabel(node);
+      g.appendChild(botLbl);
+      const inC = node.inputShapes?.[0]?.[node.inputShapes[0]?.length - 1] || 16;
+      const outC = node.config?.units || 10;
+      const maxDim = Math.max(inC, outC, 1);
+      const nL = Math.max(2, Math.min(7, Math.round(2 + 5 * inC / maxDim)));
+      const nR = Math.max(2, Math.min(7, Math.round(2 + 5 * outC / maxDim)));
+      const nr = 1.8;
+      const pad = 5, xL = w * 0.3, xR = w * 0.7;
+      const gapL = (h - pad * 2) / (nL + 1), gapR = (h - pad * 2) / (nR + 1);
+      for (let i = 0; i < nL; i++) {
+        const yl = pad + gapL * (i + 1);
+        for (let j = 0; j < nR; j++) {
+          const yr2 = pad + gapR * (j + 1);
+          g.appendChild(this.el('line', { x1: xL, y1: yl, x2: xR, y2: yr2, stroke: '#888', 'stroke-width': 0.6, opacity: 0.6 }));
+        }
+      }
+      for (let i = 0; i < nL; i++) {
+        const yl = pad + gapL * (i + 1);
+        g.appendChild(this.el('circle', { cx: xL, cy: yl, r: nr, fill: '#a8d8a8', stroke: '#5a9a5a', 'stroke-width': 0.8 }));
+      }
+      for (let j = 0; j < nR; j++) {
+        const yr2 = pad + gapR * (j + 1);
+        g.appendChild(this.el('circle', { cx: xR, cy: yr2, r: nr, fill: '#a8c8e8', stroke: '#5a8ab8', 'stroke-width': 0.8 }));
+      }
+    } else if (node.type === 'Conv2D' || node.type === 'Conv1D' || node.type === 'Conv3D' || node.type === 'Conv2DTranspose') {
+      const topLbl = this.el('text', { x: w / 2, y: -4, 'text-anchor': 'middle', fill: c.text, 'font-size': '6.5px', 'font-weight': '600', 'font-family': font });
+      topLbl.textContent = this.shortTypeName(node.type);
+      g.appendChild(topLbl);
+      g.appendChild(this.el('rect', { x: 0, y: 0, width: w, height: h, rx: 5, ry: 5, fill: c.fill, stroke: c.stroke, 'stroke-width': 1.2 }));
+      const cw = w * 0.38, ch2 = h * 0.5, d = w * 0.25;
+      const bx = (w - cw - d) / 2 + 1, by = (h - ch2 - d) / 2 + d;
+      g.appendChild(this.el('path', { d: `M${bx},${by} L${bx+cw},${by} L${bx+cw},${by+ch2} L${bx},${by+ch2} Z`, fill: c.stroke, opacity: 0.18, stroke: c.stroke, 'stroke-width': 0.7 }));
+      g.appendChild(this.el('path', { d: `M${bx},${by} L${bx+d},${by-d} L${bx+cw+d},${by-d} L${bx+cw},${by} Z`, fill: c.stroke, opacity: 0.08, stroke: c.stroke, 'stroke-width': 0.4 }));
+      g.appendChild(this.el('path', { d: `M${bx+cw},${by} L${bx+cw+d},${by-d} L${bx+cw+d},${by+ch2-d} L${bx+cw},${by+ch2} Z`, fill: c.stroke, opacity: 0.12, stroke: c.stroke, 'stroke-width': 0.4 }));
+      const k = this.numCfg(node.config?.kernel_size, 3);
+      const kSz = Math.min(cw, ch2) * Math.min(k / 6, 0.7);
+      const kx = bx + 1, ky = by + ch2 - kSz - 1;
+      g.appendChild(this.el('rect', { x: kx, y: ky, width: kSz, height: kSz, fill: '#ef5350', opacity: 0.5, stroke: '#c62828', 'stroke-width': 0.6, rx: 0.5 }));
+      g.appendChild(this.el('path', { d: `M${kx},${ky} L${kx+d},${ky-d} L${kx+kSz+d},${ky-d} L${kx+kSz},${ky} Z`, fill: '#ef5350', opacity: 0.2, stroke: '#c62828', 'stroke-width': 0.3 }));
+      g.appendChild(this.el('path', { d: `M${kx+kSz},${ky} L${kx+kSz+d},${ky-d} L${kx+kSz+d},${ky+kSz-d} L${kx+kSz},${ky+kSz} Z`, fill: '#ef5350', opacity: 0.25, stroke: '#c62828', 'stroke-width': 0.3 }));
+      const kLbl = this.el('text', { x: bx + cw / 2, y: by + ch2 + 7, 'text-anchor': 'middle', fill: c.text, 'font-size': '5px', 'font-family': font, opacity: 0.7 });
+      kLbl.textContent = k + '×' + k;
+      g.appendChild(kLbl);
+      const fLbl = this.el('text', { x: w / 2, y: h + 8, 'text-anchor': 'middle', fill: c.text, 'font-size': '5.5px', 'font-family': font, opacity: 0.7 });
+      fLbl.textContent = (node.config?.filters || '?') + ' filters';
+      g.appendChild(fLbl);
+    } else if (node.type === 'DepthwiseConv2D' || node.type === 'SeparableConv2D') {
+      const topLbl = this.el('text', { x: w / 2, y: -4, 'text-anchor': 'middle', fill: c.text, 'font-size': '6px', 'font-weight': '600', 'font-family': font });
+      topLbl.textContent = 'DW-CONV';
+      g.appendChild(topLbl);
+      g.appendChild(this.el('rect', { x: 0, y: 0, width: w, height: h, rx: 5, ry: 5, fill: c.fill, stroke: c.stroke, 'stroke-width': 1.2 }));
+      const nSlice = 4, cw = w * 0.38, ch2 = h * 0.42, d = w * 0.2;
+      const bx = (w - cw - d) / 2, by = (h - ch2 - d) / 2 + d;
+      const sliceD = d / nSlice;
+      for (let s = nSlice - 1; s >= 0; s--) {
+        const sx = bx + s * sliceD, sy = by - s * sliceD;
+        const op = 0.3 + s * 0.12;
+        g.appendChild(this.el('path', { d: `M${sx},${sy} L${sx+cw},${sy} L${sx+cw},${sy+ch2} L${sx},${sy+ch2} Z`, fill: c.stroke, opacity: op, stroke: c.stroke, 'stroke-width': s === 0 ? 0.7 : 0.3 }));
+      }
+      const k = this.numCfg(node.config?.kernel_size, 3);
+      const kSz = Math.min(cw, ch2) * Math.min(k / 6, 0.7);
+      const kx = bx + 1, ky = by + ch2 - kSz - 1;
+      g.appendChild(this.el('rect', { x: kx, y: ky, width: kSz, height: kSz, fill: '#ef5350', opacity: 0.5, stroke: '#c62828', 'stroke-width': 0.6, rx: 0.5 }));
+      const botLbl = this.el('text', { x: w / 2, y: h + 8, 'text-anchor': 'middle', fill: c.text, 'font-size': '5.5px', 'font-family': font, opacity: 0.7 });
+      botLbl.textContent = k + '×' + k;
+      g.appendChild(botLbl);
+    } else if (node.type === 'Flatten') {
+      const topLbl = this.el('text', { x: w / 2, y: -4, 'text-anchor': 'middle', fill: c.text, 'font-size': '6.5px', 'font-weight': '600', 'font-family': font });
+      topLbl.textContent = 'Flatten';
+      g.appendChild(topLbl);
+      g.appendChild(this.el('rect', { x: 0, y: 0, width: w, height: h, rx: 5, ry: 5, fill: c.fill, stroke: c.stroke, 'stroke-width': 1.2 }));
+      const colors = ['#42a5f5', '#66bb6a', '#ffa726', '#ef5350'];
+      const cs = 5, gap = 1, arrowLen = 4;
+      const gridH = 2 * cs + gap;
+      const vecH = 4 * cs + 3 * gap;
+      const totalH = gridH + arrowLen + 4 + vecH;
+      const startY = (h - totalH) / 2;
+      const gridW = 2 * cs + gap, gridX = (w - gridW) / 2;
+      for (let r = 0; r < 2; r++) for (let cc = 0; cc < 2; cc++) {
+        g.appendChild(this.el('rect', { x: gridX + cc * (cs + gap), y: startY + r * (cs + gap), width: cs, height: cs, rx: 1, fill: colors[r * 2 + cc], opacity: 0.7 }));
+      }
+      const arrowTop = startY + gridH + 2, arrowBot = arrowTop + arrowLen;
+      const ax = w / 2;
+      g.appendChild(this.el('line', { x1: ax, y1: arrowTop, x2: ax, y2: arrowBot, stroke: c.stroke, 'stroke-width': 0.8 }));
+      g.appendChild(this.el('path', { d: `M${ax - 1.5},${arrowBot - 2} L${ax},${arrowBot} L${ax + 1.5},${arrowBot - 2}`, fill: 'none', stroke: c.stroke, 'stroke-width': 0.8 }));
+      const vecY = arrowBot + 2;
+      const vecX = (w - cs) / 2;
+      for (let i = 0; i < 4; i++) {
+        g.appendChild(this.el('rect', { x: vecX, y: vecY + i * (cs + gap), width: cs, height: cs, rx: 1, fill: colors[i], opacity: 0.7 }));
+      }
     } else {
       const rx = isIdentity ? 3 : 5;
       g.appendChild(this.el('rect', {
@@ -7562,6 +7709,36 @@ function doExport() {
   a.href = URL.createObjectURL(blob);
   a.download = 'model-graph.svg';
   a.click();
+}
+function doExportPDF() {
+  if (!currentRenderer) return;
+  var svgString = currentRenderer.exportSVG();
+  if (!svgString) return;
+  var stats = document.getElementById('global-stats-bar');
+  var statsHTML = stats ? stats.innerHTML : '';
+  var win = window.open('', '_blank');
+  win.document.write('<!DOCTYPE html><html><head><title>net.sketch — Model Architecture</title>');
+  win.document.write('<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">');
+  win.document.write('<style>');
+  win.document.write('* { margin: 0; padding: 0; box-sizing: border-box; }');
+  win.document.write("body { font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif; background: #fff; padding: 20px; }");
+  win.document.write('.header { text-align: center; margin-bottom: 16px; }');
+  win.document.write('.header h1 { font-size: 14px; font-weight: 600; color: #333; letter-spacing: -0.3px; }');
+  win.document.write('.header h1 span { font-weight: 400; background: linear-gradient(135deg, #2997ff, #f9b248); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }');
+  win.document.write('.stats { display: flex; justify-content: center; gap: 24px; margin-bottom: 16px; font-size: 11px; color: #666; }');
+  win.document.write('.stats b { color: #333; font-size: 13px; }');
+  win.document.write('.graph { text-align: center; }');
+  win.document.write('.graph svg { max-width: 100%; height: auto; }');
+  win.document.write('.footer { text-align: center; margin-top: 16px; font-size: 9px; color: #aaa; }');
+  win.document.write('@media print { body { padding: 10px; } @page { margin: 10mm; size: landscape; } }');
+  win.document.write('</style></head><body>');
+  win.document.write('<div class="header"><h1>net<span>.sketch</span></h1></div>');
+  if (statsHTML) win.document.write('<div class="stats">' + statsHTML + '</div>');
+  win.document.write('<div class="graph">' + svgString + '</div>');
+  win.document.write('<div class="footer">Generated by net.sketch.io</div>');
+  win.document.write('</body></html>');
+  win.document.close();
+  setTimeout(function() { win.print(); }, 500);
 }
 function loadExample(name) {
   var ex = EXAMPLES[name || document.getElementById('example-select').value];

@@ -96,8 +96,8 @@ button {
 }
 
 button:hover { background: rgba(255,255,255,0.12); }
-button.primary { background: var(--primary); border-color: var(--primary); color: #fff; }
-button.primary:hover { background: var(--primary-dark); }
+button.primary { background: linear-gradient(135deg, var(--primary), var(--accent)); border: none; color: #fff; }
+button.primary:hover { background: linear-gradient(135deg, var(--primary-dark), #e89f30); }
 
 #example-select {
   background: rgba(255,255,255,0.06);
