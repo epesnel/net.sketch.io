@@ -6638,6 +6638,16 @@ class GraphRenderer {
       const tL = padL, tR = padR;
       const bL = h - padL, bR = h - padR;
       g.appendChild(this.el('polygon', { points: `0,${tL} ${w},${tR} ${w},${bR} 0,${bL}`, fill: c.fill, stroke: c.stroke, 'stroke-width': 1.2, 'stroke-linejoin': 'round' }));
+      const down = (inRes || 0) > (outRes || 0);
+      const cx = w / 2, aLen = h * 0.3;
+      const aTop = h / 2 - aLen / 2, aBot = h / 2 + aLen / 2;
+      if (down) {
+        g.appendChild(this.el('line', { x1: cx, y1: aTop, x2: cx, y2: aBot, stroke: c.text, 'stroke-width': 1.2, 'stroke-linecap': 'round' }));
+        g.appendChild(this.el('path', { d: `M${cx - 3},${aBot - 4} L${cx},${aBot} L${cx + 3},${aBot - 4}`, fill: 'none', stroke: c.text, 'stroke-width': 1.2, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }));
+      } else {
+        g.appendChild(this.el('line', { x1: cx, y1: aBot, x2: cx, y2: aTop, stroke: c.text, 'stroke-width': 1.2, 'stroke-linecap': 'round' }));
+        g.appendChild(this.el('path', { d: `M${cx - 3},${aTop + 4} L${cx},${aTop} L${cx + 3},${aTop + 4}`, fill: 'none', stroke: c.text, 'stroke-width': 1.2, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }));
+      }
     } else if (['ReLU', 'LeakyReLU', 'PReLU', 'ELU', 'Activation', 'Softmax'].includes(node.type)) {
       const actName = node.type === 'Activation' ? 'Act' : node.type;
       const actLbl = this.el('text', { x: w / 2, y: -4, 'text-anchor': 'middle', fill: c.text, 'font-size': '6px', 'font-weight': '600', 'font-family': font });
@@ -6951,8 +6961,12 @@ class GraphRenderer {
     const isMainEdge = this._mainEdges && this._mainEdges.has(edge.from + ':' + edge.to);
 
     const dagreEdge = this._dagreGraph.edge(edge.from, edge.to);
-    const x1 = from.x + from.w, y1 = from.y + from.h / 2;
-    const x2 = to.x, y2 = to.y + to.h / 2;
+    const isFromCircle = ['Add','Subtract','Multiply','Average','Concatenate'].includes(from.node?.type);
+    const isToCircle = ['Add','Subtract','Multiply','Average','Concatenate'].includes(to.node?.type);
+    const x1 = isFromCircle ? from.x + from.w / 2 + Math.min(from.w, from.h) / 2 : from.x + from.w;
+    const y1 = from.y + from.h / 2;
+    const x2 = isToCircle ? to.x + to.w / 2 - Math.min(to.w, to.h) / 2 : to.x;
+    const y2 = to.y + to.h / 2;
 
     const allPts = [{ x: x1, y: y1 }];
     if (dagreEdge && dagreEdge.points) {
@@ -6961,26 +6975,27 @@ class GraphRenderer {
     allPts.push({ x: x2, y: y2 });
 
     let d;
-    if (allPts.length === 2) {
-      d = `M${x1},${y1} L${x2},${y2}`;
+    if (allPts.length <= 3) {
+      const mx = (x1 + x2) / 2;
+      if (Math.abs(y2 - y1) < 3) d = `M${x1},${y1} L${x2},${y2}`;
+      else d = `M${x1},${y1} C${mx},${y1} ${mx},${y2} ${x2},${y2}`;
     } else {
-      d = `M${allPts[0].x},${allPts[0].y}`;
+      d = `M${x1},${y1}`;
       for (let i = 1; i < allPts.length - 1; i++) {
-        const prev = allPts[i - 1], cur = allPts[i], next = allPts[i + 1];
-        const mx1 = (prev.x + cur.x) / 2, my1 = (prev.y + cur.y) / 2;
-        const mx2 = (cur.x + next.x) / 2, my2 = (cur.y + next.y) / 2;
-        if (i === 1) d += ` Q${cur.x},${cur.y} ${mx2},${my2}`;
-        else d += ` T${mx2},${my2}`;
+        const cur = allPts[i], next = allPts[i + 1];
+        const mx = (cur.x + next.x) / 2, my = (cur.y + next.y) / 2;
+        if (i === 1) d += ` Q${cur.x},${cur.y} ${mx},${my}`;
+        else d += ` T${mx},${my}`;
       }
-      d += ` T${x2},${y2}`;
+      d += ` L${x2},${y2}`;
     }
 
     const path = this.el('path', {
       d, fill: 'none',
-      stroke: isMainEdge ? '#546e7a' : '#90a4ae',
-      'stroke-width': isMainEdge ? 1.4 : 1,
-      'marker-end': isMainEdge ? 'url(#arrow)' : 'url(#arrow-light)',
-      opacity: isMainEdge ? 0.7 : 0.45,
+      stroke: '#546e7a',
+      'stroke-width': isMainEdge ? 1.4 : 1.1,
+      'marker-end': 'url(#arrow)',
+      opacity: isMainEdge ? 0.7 : 0.5,
       class: 'graph-edge',
       'data-from': edge.from, 'data-to': edge.to,
     });
@@ -7102,8 +7117,8 @@ class GraphRenderer {
         }
         for (const edge of self.svg.querySelectorAll('.graph-edge')) {
           const isMain = self._mainEdges && self._mainEdges.has(edge.getAttribute('data-from') + ':' + edge.getAttribute('data-to'));
-          edge.setAttribute('stroke-width', isMain ? '1.4' : '1');
-          edge.setAttribute('opacity', isMain ? '0.7' : '0.45');
+          edge.setAttribute('stroke-width', isMain ? '1.4' : '1.1');
+          edge.setAttribute('opacity', isMain ? '0.7' : '0.5');
         }
       });
       g.addEventListener('click', (e) => {
@@ -7585,12 +7600,9 @@ class GraphRenderer {
 
   addDefs() {
     const defs = this.el('defs');
-    const m1 = this.el('marker', { id: 'arrow', viewBox: '0 0 8 6', refX: 8, refY: 3, markerWidth: 6, markerHeight: 5, orient: 'auto-start-reverse' });
-    m1.appendChild(this.el('path', { d: 'M0,0.5 L7,3 L0,5.5', fill: 'none', stroke: '#546e7a', 'stroke-width': '1.2', 'stroke-linejoin': 'round' }));
+    const m1 = this.el('marker', { id: 'arrow', viewBox: '0 0 10 8', refX: 10, refY: 4, markerWidth: 7, markerHeight: 6, orient: 'auto-start-reverse' });
+    m1.appendChild(this.el('polygon', { points: '0,0.5 10,4 0,7.5', fill: '#546e7a' }));
     defs.appendChild(m1);
-    const m2 = this.el('marker', { id: 'arrow-light', viewBox: '0 0 8 6', refX: 8, refY: 3, markerWidth: 6, markerHeight: 5, orient: 'auto-start-reverse' });
-    m2.appendChild(this.el('path', { d: 'M0,0.5 L7,3 L0,5.5', fill: 'none', stroke: '#90a4ae', 'stroke-width': '1', 'stroke-linejoin': 'round' }));
-    defs.appendChild(m2);
     const filter = this.el('filter', { id: 'hover-shadow', x: '-20%', y: '-20%', width: '140%', height: '140%' });
     filter.appendChild(this.el('feDropShadow', { dx: 0, dy: 1, stdDeviation: 2, 'flood-opacity': 0.15 }));
     defs.appendChild(filter);
