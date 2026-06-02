@@ -238,7 +238,7 @@ export class GraphRenderer {
     const c = COLORS[node.type] || DEFAULT_COLOR;
     const isIdentity = IDENTITY_TYPES.has(node.type);
     const isOp = ['Add', 'Subtract', 'Multiply', 'Average', 'Concatenate'].includes(node.type);
-    const font = "'Inter', 'Helvetica Neue', Arial, sans-serif";
+    const font = "'IBM Plex Sans', 'Inter', 'Helvetica Neue', Arial, sans-serif";
 
     const g = this.el('g', { class: 'graph-node', 'data-id': node.id, transform: `translate(${x}, ${y})` });
 
@@ -1066,14 +1066,50 @@ export class GraphRenderer {
   exportSVG() {
     if (!this.svg) return null;
     const clone = this.svg.cloneNode(true);
+    clone.setAttribute('viewBox', `0 0 ${this.naturalW} ${this.naturalH}`);
+    clone.setAttribute('width', this.naturalW);
+    clone.setAttribute('height', this.naturalH);
+    clone.style.width = ''; clone.style.height = '';
     const bg = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
     bg.setAttribute('width', '100%'); bg.setAttribute('height', '100%'); bg.setAttribute('fill', '#ffffff');
     clone.insertBefore(bg, clone.firstChild);
     const style = document.createElementNS('http://www.w3.org/2000/svg', 'style');
-    style.textContent = `text { font-family: 'Helvetica Neue', Arial, sans-serif; }`;
+    style.textContent = `text { font-family: 'IBM Plex Sans', 'Helvetica Neue', Arial, sans-serif; }`;
     clone.insertBefore(style, clone.firstChild);
     const serializer = new XMLSerializer();
     return serializer.serializeToString(clone);
+  }
+
+  async exportSVGWithFonts() {
+    if (!this.svg) return null;
+    let fontCSS = '';
+    try {
+      const resp = await fetch('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap');
+      const css = await resp.text();
+      const urls = [...css.matchAll(/url\(([^)]+)\)/g)];
+      let inlined = css;
+      for (const m of urls) {
+        try {
+          const fontResp = await fetch(m[1]);
+          const blob = await fontResp.blob();
+          const b64 = await new Promise(r => { const rd = new FileReader(); rd.onload = () => r(rd.result); rd.readAsDataURL(blob); });
+          inlined = inlined.replace(m[1], b64);
+        } catch(e) {}
+      }
+      fontCSS = inlined;
+    } catch(e) {}
+    const clone = this.svg.cloneNode(true);
+    clone.setAttribute('viewBox', `0 0 ${this.naturalW} ${this.naturalH}`);
+    clone.setAttribute('width', this.naturalW);
+    clone.setAttribute('height', this.naturalH);
+    clone.style.width = ''; clone.style.height = '';
+    const bg = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    bg.setAttribute('width', '100%'); bg.setAttribute('height', '100%'); bg.setAttribute('fill', '#ffffff');
+    clone.insertBefore(bg, clone.firstChild);
+    const style = document.createElementNS('http://www.w3.org/2000/svg', 'style');
+    style.textContent = fontCSS + `\ntext { font-family: 'IBM Plex Sans', 'Helvetica Neue', Arial, sans-serif; }`;
+    clone.insertBefore(style, clone.firstChild);
+    return new XMLSerializer().serializeToString(clone);
   }
 
   // ─── SVG helpers ──────────────────────────────────────

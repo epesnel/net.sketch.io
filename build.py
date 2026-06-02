@@ -230,9 +230,9 @@ function doAnalyze() {
     graphPanel.innerHTML = '<div class="empty-state">Analysis failed: ' + e.message + '</div>';
   }
 }
-function doExport() {
+async function doExport() {
   if (!currentRenderer) return;
-  var svgString = currentRenderer.exportSVG();
+  var svgString = await currentRenderer.exportSVGWithFonts();
   if (!svgString) return;
   var blob = new Blob([svgString], { type: 'image/svg+xml' });
   var a = document.createElement('a');
@@ -240,16 +240,13 @@ function doExport() {
   a.download = 'model-graph.svg';
   a.click();
 }
-function doExportPDF() {
+async function doExportPDF() {
   if (!currentRenderer) return;
-  var svgString = currentRenderer.exportSVG();
+  var svgString = await currentRenderer.exportSVGWithFonts();
   if (!svgString) return;
-  var svgEl = currentRenderer.svg;
-  var vb = svgEl.getAttribute('viewBox').split(' ').map(Number);
-  var svgW = vb[2] || 800, svgH = vb[3] || 400;
+  var w = currentRenderer.naturalW, h = currentRenderer.naturalH;
   var margin = 10;
-  var pdfW = svgW * 0.75 + margin * 2;
-  var pdfH = svgH * 0.75 + margin * 2;
+  var pdfW = w * 0.75 + margin * 2, pdfH = h * 0.75 + margin * 2;
   var orientation = pdfW > pdfH ? 'landscape' : 'portrait';
   var pdf = new jspdf.jsPDF({ orientation: orientation, unit: 'pt', format: [pdfW, pdfH] });
   var el = document.createElement('div');
@@ -488,7 +485,7 @@ html = f"""<!DOCTYPE html>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <title>net.sketch</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/svg2pdf.js@2.2.4/dist/svg2pdf.umd.min.js"></script>
