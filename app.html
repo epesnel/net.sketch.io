@@ -6601,6 +6601,11 @@ class GraphRenderer {
     const resFrac = res / Math.max(1, maxRes);
     const hShape = Math.round(40 + resFrac * 110);
 
+    if (node.type === 'Input' || node.type === 'Output') {
+      const chFrac = ch / Math.max(1, maxCh);
+      return { w: Math.round(Math.max(30, 20 + Math.sqrt(chFrac) * 120)), h: Math.round(20 + resFrac * 55) };
+    }
+
     const isPool = ['MaxPooling2D','MaxPooling1D','AveragePooling2D','AveragePooling1D','GlobalAveragePooling2D','GlobalMaxPooling2D','UpSampling2D','UpSampling1D','Resize'].includes(node.type);
     if (isPool) {
       const inRes = node.inputShapes?.[0]?.[1];
@@ -6781,6 +6786,36 @@ class GraphRenderer {
       const vecX = (w - cs) / 2;
       for (let i = 0; i < 4; i++) {
         g.appendChild(this.el('rect', { x: vecX, y: vecY + i * (cs + gap), width: cs, height: cs, rx: 1, fill: colors[i], opacity: 0.7 }));
+      }
+    } else if (node.type === 'Input' || node.type === 'Output') {
+      const ioLbl = this.el('text', { x: w / 2, y: -2, 'text-anchor': 'middle', fill: c.text, 'font-size': '11px', 'font-style': 'italic', 'font-family': 'serif' });
+      ioLbl.textContent = node.type === 'Input' ? 'x' : 'y';
+      g.appendChild(ioLbl);
+      const s = node.outputShape || [];
+      const sh = (s.length >= 4 && typeof s[1] === 'number') ? s[1] : null;
+      const sw = (s.length >= 4 && typeof s[2] === 'number') ? s[2] : null;
+      const sc = s.length >= 2 ? s[s.length - 1] : null;
+      const dd = w * 0.22;
+      const cw2 = w - dd - 2, ch2 = h * 0.7;
+      const bx = 1, by = (h - ch2 - dd) / 2 + dd;
+      g.appendChild(this.el('path', { d: `M${bx},${by} L${bx+cw2},${by} L${bx+cw2},${by+ch2} L${bx},${by+ch2} Z`, fill: c.stroke, opacity: 0.2, stroke: c.stroke, 'stroke-width': 0.7 }));
+      g.appendChild(this.el('path', { d: `M${bx},${by} L${bx+dd},${by-dd} L${bx+cw2+dd},${by-dd} L${bx+cw2},${by} Z`, fill: c.stroke, opacity: 0.1, stroke: c.stroke, 'stroke-width': 0.5 }));
+      g.appendChild(this.el('path', { d: `M${bx+cw2},${by} L${bx+cw2+dd},${by-dd} L${bx+cw2+dd},${by+ch2-dd} L${bx+cw2},${by+ch2} Z`, fill: c.stroke, opacity: 0.14, stroke: c.stroke, 'stroke-width': 0.5 }));
+      if (sh !== null) {
+        const hLbl = this.el('text', { x: bx - 2, y: by + ch2 / 2, 'text-anchor': 'end', 'dominant-baseline': 'central', fill: c.text, 'font-size': '5px', 'font-family': font, opacity: 0.7 });
+        hLbl.textContent = sh;
+        g.appendChild(hLbl);
+      }
+      if (sw !== null) {
+        const wLbl = this.el('text', { x: bx + cw2 / 2, y: by + ch2 + 7, 'text-anchor': 'middle', fill: c.text, 'font-size': '5px', 'font-family': font, opacity: 0.7 });
+        wLbl.textContent = sw;
+        g.appendChild(wLbl);
+      }
+      if (sc !== null) {
+        const mx = bx + cw2 + dd / 2, my = by - dd / 2;
+        const cLbl = this.el('text', { x: mx + 3, y: my, 'text-anchor': 'start', 'dominant-baseline': 'central', fill: c.text, 'font-size': '5px', 'font-family': font, opacity: 0.7 });
+        cLbl.textContent = sc;
+        g.appendChild(cLbl);
       }
     } else {
       const rx = isIdentity ? 3 : 5;
