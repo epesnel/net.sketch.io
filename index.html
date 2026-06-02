@@ -6961,18 +6961,25 @@ class GraphRenderer {
     const isMainEdge = this._mainEdges && this._mainEdges.has(edge.from + ':' + edge.to);
 
     const dagreEdge = this._dagreGraph.edge(edge.from, edge.to);
-    const isFromCircle = ['Add','Subtract','Multiply','Average','Concatenate'].includes(from.node?.type);
-    const isToCircle = ['Add','Subtract','Multiply','Average','Concatenate'].includes(to.node?.type);
-    const x1 = isFromCircle ? from.x + from.w / 2 + Math.min(from.w, from.h) / 2 : from.x + from.w;
-    const y1 = from.y + from.h / 2;
-    const x2 = isToCircle ? to.x + to.w / 2 - Math.min(to.w, to.h) / 2 : to.x;
-    const y2 = to.y + to.h / 2;
+    const x1 = from.x + from.w, y1 = from.y + from.h / 2;
+    let x2 = to.x, y2 = to.y + to.h / 2;
 
     const allPts = [{ x: x1, y: y1 }];
     if (dagreEdge && dagreEdge.points) {
       for (const p of dagreEdge.points) allPts.push(p);
     }
     allPts.push({ x: x2, y: y2 });
+
+    const isToCircle = ['Add','Subtract','Multiply','Average','Concatenate'].includes(to.node?.type);
+    if (isToCircle) {
+      const cx = to.x + to.w / 2, cy = to.y + to.h / 2, r = Math.min(to.w, to.h) / 2;
+      const prev = allPts[allPts.length - 2];
+      const dx = cx - prev.x, dy = cy - prev.y;
+      const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+      x2 = cx - (dx / dist) * r;
+      y2 = cy - (dy / dist) * r;
+      allPts[allPts.length - 1] = { x: x2, y: y2 };
+    }
 
     let d;
     if (allPts.length <= 3) {
